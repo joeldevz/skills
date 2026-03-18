@@ -3,7 +3,7 @@ name: "Review command reads CONVENTIONS.md and git diff before reporting"
 description: |
   The /review command must read CONVENTIONS.md and run git diff to understand
   what changed, then produce a structured review report without modifying files.
-agent: execution-orchestrator
+agent: manager
 
 prompt: |
   Review all current changes before committing.

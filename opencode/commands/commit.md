@@ -1,6 +1,6 @@
 ---
 description: Create a conventional commit for the current changes
-agent: execution-orchestrator
+agent: manager
 subtask: true
 ---
 

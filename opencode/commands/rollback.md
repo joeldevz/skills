@@ -1,6 +1,6 @@
 ---
 description: Undo the last step's changes and reset PLAN.md status
-agent: execution-orchestrator
+agent: manager
 ---
 
 Undo the changes from the current or last completed step and reset its status in PLAN.md.

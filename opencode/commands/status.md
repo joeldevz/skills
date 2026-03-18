@@ -1,6 +1,6 @@
 ---
 description: Show current progress from PLAN.md
-agent: execution-orchestrator
+agent: manager
 subtask: true
 ---
 

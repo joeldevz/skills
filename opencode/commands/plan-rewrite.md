@@ -1,6 +1,6 @@
 ---
 description: Rewrite or improve the current PLAN.md
-agent: step-builder-agent
+agent: planner
 ---
 
 Review and improve the existing PLAN.md for the current project.
@@ -10,7 +10,7 @@ Workflow:
 2. Scan the codebase to validate whether the plan still matches reality
 3. Identify ambiguity, missing dependencies, missing business rules, or poor step boundaries
 4. Ask only the missing questions needed to fix those gaps
-5. Rewrite PLAN.md so it is actionable for the execution-orchestrator and ts-expert-coder
+5. Rewrite PLAN.md so it is actionable for the manager and coder
 
 Context:
 - Working directory: {workdir}

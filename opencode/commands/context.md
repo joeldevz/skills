@@ -1,6 +1,6 @@
 ---
 description: Save project discoveries and decisions to Engram persistent memory
-agent: step-builder-agent
+agent: planner
 subtask: true
 ---
 

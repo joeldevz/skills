@@ -1,10 +1,10 @@
 id: orchestrator-stops-for-review
 name: "Orchestrator stops after one step and asks for human review"
 description: |
-  After delegating one step to ts-expert-coder and receiving the result,
+  After delegating one step to coder and receiving the result,
   the orchestrator must stop and ask the human for review.
   It must NOT automatically proceed to the next step.
-agent: execution-orchestrator
+agent: manager
 
 prompt: |
   Continue executing the plan.

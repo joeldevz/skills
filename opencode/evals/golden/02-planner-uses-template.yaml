@@ -4,7 +4,7 @@ description: |
   When the task is clearly a CRUD module, the planner should read the
   PLAN-crud.md template from ~/.config/opencode/templates/ and use it
   as a starting point.
-agent: step-builder-agent
+agent: planner
 
 prompt: |
   Create a complete CRUD for managing "invoices" in this NestJS backend.

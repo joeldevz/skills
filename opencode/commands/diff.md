@@ -1,6 +1,6 @@
 ---
 description: Show an annotated diff of changes from the current step
-agent: execution-orchestrator
+agent: manager
 subtask: true
 ---
 

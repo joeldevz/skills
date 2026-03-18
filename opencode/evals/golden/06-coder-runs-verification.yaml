@@ -1,9 +1,9 @@
 id: coder-runs-verification
 name: "Coder runs tsc/build/test verification before reporting success"
 description: |
-  The ts-expert-coder must run at least one verification command (tsc, build,
+  The coder must run at least one verification command (tsc, build,
   or test) before claiming success. It must not skip self-verification.
-agent: ts-expert-coder
+agent: coder
 
 prompt: |
   Implement Step 1 from PLAN.md.

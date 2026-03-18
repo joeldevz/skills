@@ -6,12 +6,12 @@ Tests mínimos para validar que los 3 agentes se comportan como esperamos.
 
 | Test | Agente | Qué valida |
 |------|--------|------------|
-| 01-planner-reads-conventions | step-builder-agent | Lee CONVENTIONS.md antes de preguntar |
-| 02-planner-uses-template | step-builder-agent | Usa template PLAN-crud para tareas CRUD |
-| 03-orchestrator-reads-plan-first | execution-orchestrator | Lee PLAN.md antes de hacer nada |
-| 04-orchestrator-stops-for-review | execution-orchestrator | Se detiene tras un paso y pide review |
-| 05-coder-reads-before-writing | ts-expert-coder | Lee código existente antes de escribir |
-| 06-coder-runs-verification | ts-expert-coder | Corre tsc/build/test antes de reportar éxito |
+| 01-planner-reads-conventions | planner | Lee CONVENTIONS.md antes de preguntar |
+| 02-planner-uses-template | planner | Usa template PLAN-crud para tareas CRUD |
+| 03-orchestrator-reads-plan-first | manager | Lee PLAN.md antes de hacer nada |
+| 04-orchestrator-stops-for-review | manager | Se detiene tras un paso y pide review |
+| 05-coder-reads-before-writing | coder | Lee código existente antes de escribir |
+| 06-coder-runs-verification | coder | Corre tsc/build/test antes de reportar éxito |
 
 ## Cómo correr
 
@@ -23,7 +23,7 @@ Tests mínimos para validar que los 3 agentes se comportan como esperamos.
 ./evals/run-evals.sh golden/01-planner-reads-conventions.yaml
 
 # Solo tests de un agente
-./evals/run-evals.sh --agent step-builder-agent
+./evals/run-evals.sh --agent planner
 ```
 
 ## Formato de test YAML
@@ -33,7 +33,7 @@ id: unique-id
 name: "Nombre legible"
 description: |
   Qué valida este test.
-agent: step-builder-agent | execution-orchestrator | ts-expert-coder
+agent: planner | manager | coder
 
 prompt: |
   Lo que se le envía al agente.

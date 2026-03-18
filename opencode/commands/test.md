@@ -1,6 +1,6 @@
 ---
 description: Generate or run tests for the current step or specified module
-agent: ts-expert-coder
+agent: coder
 ---
 
 Generate or run tests for: "{argument}"

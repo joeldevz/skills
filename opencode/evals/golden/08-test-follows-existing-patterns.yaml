@@ -3,7 +3,7 @@ name: "Test command reads existing tests before generating new ones"
 description: |
   The /test command must inspect existing test files to understand patterns
   (framework, naming, mocking) before generating new tests.
-agent: ts-expert-coder
+agent: coder
 
 prompt: |
   Generate tests for src/invoices/application/commands/create-invoice/create-invoice.handler.ts

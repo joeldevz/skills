@@ -1,6 +1,6 @@
 ---
 description: Fetch live documentation for an external library using Context7
-agent: ts-expert-coder
+agent: coder
 ---
 
 Fetch live, version-specific documentation for the library or topic: "{argument}"

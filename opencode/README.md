@@ -26,18 +26,18 @@ opencode/
 
 ## Agentes
 
-### `step-builder-agent`
+### `planner`
 
 - corre un **discovery checklist** antes de preguntar: lee CONVENTIONS.md, package.json, modulos similares, tests, y consulta Engram por decisiones previas
 - hace preguntas de negocio y tecnicas en bloques
 - recomienda defaults razonables
 - genera `PLAN.md`
 
-### `execution-orchestrator`
+### `manager`
 
 - lee `PLAN.md`
 - ejecuta un solo paso por vez
-- delega implementacion a `ts-expert-coder`
+- delega implementacion a `coder`
 - actualiza estados del plan
 - obliga a revision humana antes de continuar
 
@@ -47,7 +47,7 @@ Estados de `PLAN.md`:
 - `[!] needs fixes`
 - `[x] done`
 
-### `ts-expert-coder`
+### `coder`
 
 - implementa una tarea acotada
 - sigue patrones locales del repo
@@ -74,7 +74,7 @@ Estados de `PLAN.md`:
 
 - `/execute`
   - toma el siguiente paso pendiente o con fixes
-  - lo delega a `ts-expert-coder`
+  - lo delega a `coder`
   - presenta cambios y pide review humana
 - `/apply-feedback <cambios>`
   - toma feedback humano
@@ -248,7 +248,7 @@ DTOs si pueden usar primitivos porque son la frontera de serializacion.
 ./evals/run-evals.sh
 
 # Filtrar por agente
-./evals/run-evals.sh --agent ts-expert-coder
+./evals/run-evals.sh --agent coder
 ```
 
 Hoy la evaluacion es manual (leer output y verificar). El roadmap es automatizar el runner.

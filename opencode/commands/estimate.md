@@ -1,6 +1,6 @@
 ---
 description: Estimate implementation effort for the current PLAN.md
-agent: step-builder-agent
+agent: planner
 subtask: true
 ---
 

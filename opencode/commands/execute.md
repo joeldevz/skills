@@ -1,6 +1,6 @@
 ---
 description: Execute the next pending step from PLAN.md
-agent: execution-orchestrator
+agent: manager
 ---
 
 Execute the next pending step from PLAN.md.
@@ -8,7 +8,7 @@ Execute the next pending step from PLAN.md.
 Workflow:
 1. Read PLAN.md from the project root
 2. Identify the next pending step
-3. Delegate implementation of that single step to `ts-expert-coder`
+3. Delegate implementation of that single step to `coder`
 4. Present the modified files, what changed, and verification results
 5. Stop and request human review before any further step
 

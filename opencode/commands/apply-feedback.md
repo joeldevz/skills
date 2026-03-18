@@ -1,6 +1,6 @@
 ---
 description: Apply human feedback to the current step
-agent: execution-orchestrator
+agent: manager
 ---
 
 Apply the following human feedback to the current step in PLAN.md:
@@ -10,7 +10,7 @@ Apply the following human feedback to the current step in PLAN.md:
 Workflow:
 1. Read PLAN.md and locate the current step under review
 2. Interpret the feedback and transform it into precise implementation instructions
-3. Delegate the requested fixes to `ts-expert-coder`
+3. Delegate the requested fixes to `coder`
 4. Present the updated files, changes made, and verification results
 5. Stop and ask the human to review again
 

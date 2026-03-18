@@ -1,6 +1,6 @@
 ---
 description: Review all changes before committing — checks conventions, types, tests, and quality
-agent: execution-orchestrator
+agent: manager
 subtask: true
 ---
 

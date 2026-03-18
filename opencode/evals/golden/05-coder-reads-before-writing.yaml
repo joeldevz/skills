@@ -1,9 +1,9 @@
 id: coder-reads-before-writing
 name: "Coder reads existing code and conventions before writing"
 description: |
-  The ts-expert-coder must inspect existing code, CONVENTIONS.md, and nearby
+  The coder must inspect existing code, CONVENTIONS.md, and nearby
   modules before making any changes. It should never write code blindly.
-agent: ts-expert-coder
+agent: coder
 
 prompt: |
   Implement Step 1 from PLAN.md.

@@ -1,6 +1,6 @@
 ---
 description: Onboard to a project - scan codebase and learn conventions before working
-agent: step-builder-agent
+agent: planner
 subtask: true
 ---
 
