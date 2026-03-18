@@ -1,0 +1,39 @@
+id: test-follows-existing-patterns
+name: "Test command reads existing tests before generating new ones"
+description: |
+  The /test command must inspect existing test files to understand patterns
+  (framework, naming, mocking) before generating new tests.
+agent: ts-expert-coder
+
+prompt: |
+  Generate tests for src/invoices/application/commands/create-invoice/create-invoice.handler.ts
+
+setup:
+  files:
+    - path: src/users/application/commands/create-user/create-user.handler.spec.ts
+      content: |
+        import { Test } from '@nestjs/testing';
+        describe('CreateUserHandler', () => {
+          it('should create a user', async () => {
+            expect(true).toBe(true);
+          });
+        });
+    - path: src/invoices/application/commands/create-invoice/create-invoice.handler.ts
+      content: |
+        export class CreateInvoiceHandler {
+          async execute() { return 'id'; }
+        }
+
+checks:
+  must_read_any:
+    - src/users/application/commands/create-user/create-user.handler.spec.ts
+    - "*.spec.ts"
+  reads_before_writes: true
+  must_produce_any:
+    - src/invoices/application/commands/create-invoice/create-invoice.handler.spec.ts
+  must_run_any:
+    - "npm test"
+    - "npx jest"
+    - "pnpm test"
+
+timeout: 120000

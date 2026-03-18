@@ -81,6 +81,29 @@ Estados de `PLAN.md`:
   - vuelve a delegar correcciones
 - `/status`
   - muestra completados, paso actual y siguientes pasos
+- `/diff`
+  - muestra los cambios del paso actual con anotaciones
+  - agrupa por proposito, no solo por archivo
+- `/rollback [step]`
+  - deshace los cambios del ultimo paso (o del paso indicado)
+  - pide confirmacion antes de revertir
+  - actualiza PLAN.md a `[ ] pending`
+- `/test [modulo]`
+  - genera tests para el paso actual o modulo especificado
+  - lee tests existentes para seguir los mismos patrones
+  - corre los tests y reporta resultados
+
+### Calidad
+
+- `/review`
+  - revisa todos los cambios contra CONVENTIONS.md
+  - verifica tipos, imports, arquitectura, tests faltantes
+  - produce un reporte estructurado (Passing / Warnings / Issues)
+  - quality gate antes de `/commit`
+- `/estimate`
+  - estima el esfuerzo de cada paso del PLAN.md
+  - asigna T-shirt sizes (XS a XL) con riesgos
+  - util para planificacion de sprint
 
 ### Documentacion
 
@@ -88,6 +111,10 @@ Estados de `PLAN.md`:
   - busca docs en vivo via Context7 MCP
   - filtra a lo relevante y presenta un resumen practico
   - util cuando integras librerias nuevas o dudas de una API
+- `/context [observacion]`
+  - guarda descubrimientos y decisiones en Engram
+  - si no se pasa argumento, extrae aprendizajes del trabajo reciente
+  - persiste entre sesiones para no repetir descubrimientos
 
 ### Git
 
@@ -102,12 +129,16 @@ Estados de `PLAN.md`:
 ```text
 /onboard
 /plan implementar login con JWT
+/estimate
 /execute
+/diff
 /apply-feedback separar DTOs y agregar tests
 /execute
-/status
+/test
+/review
 /commit
 /pr
+/context
 ```
 
 ## Setup para cada miembro del equipo
@@ -164,6 +195,10 @@ Referencia para fixes con enfoque RED -> GREEN -> REFACTOR.
 
 Referencia para integraciones con servicios externos.
 
+### `templates/PLAN-feature.md`
+
+Referencia para features generales que no encajan en CRUD, bugfix, integration, o refactor.
+
 ### `templates/PLAN-refactor.md`
 
 Referencia para refactors con red de seguridad de tests.
@@ -176,6 +211,7 @@ Reglas de Conventional Commits y estructura de PR.
 
 - `prd`
 - `typescript-advanced-types`
+- `nestjs-patterns` — patrones DDD + CQRS para NestJS: entidades, Value Objects, commands, queries, handlers, controllers, repositorios Prisma, jobs BullMQ, tests
 
 No hay familia `sdd-*` ni `find-skills`.
 
@@ -193,7 +229,7 @@ DTOs si pueden usar primitivos porque son la frontera de serializacion.
 
 ## Eval Framework
 
-6 golden tests en `evals/golden/` que validan el comportamiento esperado de los 3 agentes:
+9 golden tests en `evals/golden/` que validan el comportamiento esperado de los 3 agentes y commands clave:
 
 | Test | Agente | Valida |
 |------|--------|--------|
@@ -203,6 +239,9 @@ DTOs si pueden usar primitivos porque son la frontera de serializacion.
 | 04 | orchestrator | Se detiene tras un paso y pide review |
 | 05 | coder | Lee codigo existente antes de escribir |
 | 06 | coder | Corre verificacion antes de reportar exito |
+| 07 | orchestrator | /review lee CONVENTIONS.md y git diff |
+| 08 | coder | /test lee tests existentes antes de generar |
+| 09 | orchestrator | /rollback pide confirmacion antes de revertir |
 
 ```bash
 # Ver los tests y sus checks
