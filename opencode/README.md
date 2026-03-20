@@ -28,7 +28,7 @@ opencode/
 
 ### `planner`
 
-- corre un **discovery checklist** antes de preguntar: lee CONVENTIONS.md, package.json, modulos similares, tests, y consulta Engram por decisiones previas
+- corre un **discovery checklist** antes de preguntar: primero inicia memoria con Neurox (`neurox_session_start` + `neurox_context`), luego lee CONVENTIONS.md, package.json, modulos similares, tests, y consulta decisiones previas con `neurox_recall`
 - hace preguntas de negocio y tecnicas en bloques
 - recomienda defaults razonables
 - genera `PLAN.md`
@@ -42,6 +42,7 @@ opencode/
 - obliga a revision humana antes de continuar
 
 Estados de `PLAN.md`:
+
 - `[ ] pending`
 - `[~] in progress`
 - `[!] needs fixes`
@@ -112,7 +113,7 @@ Estados de `PLAN.md`:
   - filtra a lo relevante y presenta un resumen practico
   - util cuando integras librerias nuevas o dudas de una API
 - `/context [observacion]`
-  - guarda descubrimientos y decisiones en Engram
+  - guarda descubrimientos y decisiones en Neurox
   - si no se pasa argumento, extrae aprendizajes del trabajo reciente
   - persiste entre sesiones para no repetir descubrimientos
 
@@ -145,7 +146,7 @@ Estados de `PLAN.md`:
 
 1. Copiar el contenido de `opencode/` a `~/.config/opencode/`
 2. Ejecutar `bun install` dentro de `~/.config/opencode/`
-3. Tener instalado el binario `engram` si quieres memoria persistente
+3. Tener Neurox configurado si quieres memoria persistente
 4. Tener `gh` autenticado si quieres usar `/pr`
 
 ## Configuracion local opcional
@@ -168,15 +169,16 @@ Context7 esta habilitado por defecto pero requiere API key. Cada persona debe ed
 Sin la key, Context7 simplemente no funcionara pero no rompe el flujo.
 No subir esa key al repositorio.
 
-### Engram
+### Neurox
 
-`engram` ya esta habilitado en la configuracion. Si el binario no existe, el plugin no rompe el flujo: simplemente no habra memoria persistente.
+`neurox` es el sistema de memoria persistente preferido. La secuencia recomendada al empezar cualquier trabajo es `neurox_session_start` y despues `neurox_context`, antes de cualquier otra contextualizacion.
 
 ## Templates
 
 ### `templates/CONVENTIONS.md`
 
 Template de convenciones para copiar a cada proyecto. Esta basado en el backend real explorado y define:
+
 - DDD + CQRS + capas
 - uso obligatorio de Value Objects en lugar de primitivos en dominio
 - naming, imports, controllers, DTOs, repositorios y errores
@@ -220,6 +222,7 @@ No hay familia `sdd-*` ni `find-skills`.
 En dominio, usar siempre objetos de dominio y Value Objects, no primitivos.
 
 Ejemplos:
+
 - `Money` en lugar de `number` para dinero
 - `Uuid` en lugar de `string` para ids
 - `Email` en lugar de `string` para correos
@@ -231,17 +234,17 @@ DTOs si pueden usar primitivos porque son la frontera de serializacion.
 
 9 golden tests en `evals/golden/` que validan el comportamiento esperado de los 3 agentes y commands clave:
 
-| Test | Agente | Valida |
-|------|--------|--------|
-| 01 | planner | Lee CONVENTIONS.md antes de preguntar |
-| 02 | planner | Usa template PLAN-crud para tareas CRUD |
-| 03 | orchestrator | Lee PLAN.md antes de hacer nada |
-| 04 | orchestrator | Se detiene tras un paso y pide review |
-| 05 | coder | Lee codigo existente antes de escribir |
-| 06 | coder | Corre verificacion antes de reportar exito |
-| 07 | orchestrator | /review lee CONVENTIONS.md y git diff |
-| 08 | coder | /test lee tests existentes antes de generar |
-| 09 | orchestrator | /rollback pide confirmacion antes de revertir |
+| Test | Agente       | Valida                                        |
+| ---- | ------------ | --------------------------------------------- |
+| 01   | planner      | Lee CONVENTIONS.md antes de preguntar         |
+| 02   | planner      | Usa template PLAN-crud para tareas CRUD       |
+| 03   | orchestrator | Lee PLAN.md antes de hacer nada               |
+| 04   | orchestrator | Se detiene tras un paso y pide review         |
+| 05   | coder        | Lee codigo existente antes de escribir        |
+| 06   | coder        | Corre verificacion antes de reportar exito    |
+| 07   | orchestrator | /review lee CONVENTIONS.md y git diff         |
+| 08   | coder        | /test lee tests existentes antes de generar   |
+| 09   | orchestrator | /rollback pide confirmacion antes de revertir |
 
 ```bash
 # Ver los tests y sus checks
@@ -263,6 +266,7 @@ Hoy la evaluacion es manual (leer output y verificar). El roadmap es automatizar
 ## Nota practica
 
 Este repo esta pensado para ser portable. Por eso:
+
 - incluye `package.json` para poder correr `bun install`
 - incluye el skill `typescript-advanced-types` como archivo real, no como symlink local
 - no incluye secretos en la configuracion compartida

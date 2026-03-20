@@ -27,7 +27,7 @@ scripts/
 
 - **3 agentes** con roles claros: planner, manager y coder
 - **15 commands** para todo el ciclo: onboard, planificar, estimar, ejecutar, revisar, testear, commitear, abrir PRs, y guardar memoria
-- **Plugin Engram** para memoria persistente entre sesiones
+- **Neurox MCP** como sistema de memoria persistente entre sesiones
 - **Context7 MCP** para documentacion en vivo de librerias externas
 - **Templates** para convenciones, commits/PRs, y 5 tipos de plan (CRUD, bugfix, integration, refactor, feature)
 - **Skills** de PRD, TypeScript avanzado, y patrones NestJS DDD+CQRS
@@ -38,6 +38,7 @@ scripts/
 - **3 agentes instalables** en `~/.claude/agents`: `planner`, `manager`, `coder`
 - **15 slash skills** en `~/.claude/skills` con los mismos nombres operativos: `/plan`, `/execute`, `/review`, etc.
 - **Overlay de `CLAUDE.md`** para mantener el mismo workflow de `PLAN.md`, step-by-step y human review loop
+- **Neurox MCP configurado en `~/.claude.json`** para que Claude Code use la misma memoria persistente
 - **Compatibilidad con Claude subagents**: el hilo principal actua como orquestador y delega trabajo acotado a los agentes instalados
 
 ## Setup rapido
@@ -55,7 +56,9 @@ cd skills
 ./scripts/setup.sh --claude
 ```
 
-El setup hace backup de la configuracion existente antes de escribir. En OpenCode tambien restaura tu API key de Context7 si ya la tenias.
+El setup hace backup de la configuracion existente antes de escribir. En OpenCode tambien restaura tu API key de Context7 si ya la tenias, y en Claude registra Neurox en `~/.claude.json`.
+
+Requisito: `neurox` debe estar instalado y disponible en `PATH` para que OpenCode y Claude usen la misma memoria persistente.
 
 ## Flujo de trabajo completo
 

@@ -9,7 +9,13 @@
         "read": true,
         "write": true,
         "edit": true,
-        "bash": true
+        "bash": true,
+        "neurox_session_start": true,
+        "neurox_context": true,
+        "neurox_recall": true,
+        "neurox_save": true,
+        "neurox_update": true,
+        "neurox_session_end": true
       }
     }
   },
@@ -22,12 +28,11 @@
       },
       "enabled": true
     },
-    "engram": {
+    "neurox": {
       "type": "local",
       "command": [
-        "engram",
-        "mcp",
-        "--tools=agent"
+        "neurox",
+        "mcp"
       ],
       "enabled": true
     }

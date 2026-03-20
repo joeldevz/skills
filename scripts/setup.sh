@@ -68,6 +68,40 @@ backup_dir_if_exists() {
   fi
 }
 
+require_neurox() {
+  if ! command -v neurox >/dev/null 2>&1; then
+    echo "Error: neurox is required for this setup but was not found in PATH."
+    echo "Install neurox first, then rerun the installer."
+    exit 1
+  fi
+}
+
+configure_claude_neurox_mcp() {
+  local claude_json="$HOME/.claude.json"
+
+  echo "Configuring Neurox MCP for Claude Code in $claude_json..."
+  python3 - "$claude_json" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+target = Path(sys.argv[1]).expanduser()
+if target.exists():
+    data = json.loads(target.read_text(encoding='utf-8'))
+else:
+    data = {}
+
+mcp_servers = data.setdefault('mcpServers', {})
+mcp_servers['neurox'] = {
+    'type': 'stdio',
+    'command': 'neurox',
+    'args': ['mcp'],
+}
+
+target.write_text(json.dumps(data, indent=2, ensure_ascii=False) + '\n', encoding='utf-8')
+PY
+}
+
 install_opencode() {
   local source_dir="$REPO_ROOT/opencode"
   local target_dir="$HOME/.config/opencode"
@@ -76,6 +110,8 @@ install_opencode() {
     echo "Error: opencode/ directory not found at $source_dir"
     exit 1
   fi
+
+  require_neurox
 
   backup_dir_if_exists "$target_dir"
 
@@ -144,6 +180,8 @@ install_claude() {
     exit 1
   fi
 
+  require_neurox
+
   backup_dir_if_exists "$target_dir"
   mkdir -p "$target_dir"
 
@@ -152,6 +190,8 @@ install_claude() {
 
   echo "Updating $target_claude_md with team workflow overlay..."
   append_marked_block "$target_claude_md" "$overlay_file" "skills-repo"
+
+  configure_claude_neurox_mcp
 
   echo "Claude Code assets installed at $target_dir"
 }

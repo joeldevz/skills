@@ -7,7 +7,7 @@ Cierra la sesión de trabajo actual.
 
 1. Corre `git status` para ver el estado
 2. Si hay cambios sin commitear, pregunta si commitear antes de cerrar
-3. Guarda en Engram (mem_save) las decisiones importantes tomadas en esta sesión:
+3. Guarda en Neurox las decisiones importantes tomadas en esta sesión usando `neurox_save`:
    - Decisiones de arquitectura
    - Patrones descubiertos
    - Bugs encontrados y cómo se resolvieron

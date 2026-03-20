@@ -15,9 +15,6 @@ OPENCODE_TEMPLATES = ROOT / "opencode" / "templates"
 CLAUDE_OVERLAY = ROOT / "claude-code" / "CLAUDE.md"
 
 
-TOOLS = "Read, Write, Edit, Glob, Grep, Bash"
-
-
 MANAGER_PROMPT = """EXECUTION ORCHESTRATOR (CLAUDE MAIN-THREAD COMPANION)
 =====================================================
 
@@ -100,10 +97,10 @@ def normalize_command_body(body: str) -> str:
         "{argument}": "$ARGUMENTS",
         "{workdir}": "the current working directory",
         "{project}": "the current project",
-        "Engram memory (`mem_search`)": "Claude project memory and existing notes",
-        "Engram persistent memory": "Claude project memory",
-        "Engram": "Claude memory",
-        "`mem_search`": "Claude memory files",
+        "Engram memory (`mem_search`)": "Neurox memory (`neurox_recall`)",
+        "Engram persistent memory": "Neurox persistent memory",
+        "Engram": "Neurox",
+        "`mem_search`": "`neurox_recall`",
         "~/.config/opencode/templates/": "~/.claude/templates/",
         "Use `topic_key` for evolving topics so they update instead of duplicating": "Prefer updating an existing memory note when the topic already exists",
     }
@@ -137,7 +134,6 @@ def render_agents(target: Path) -> None:
             "---",
             f"name: {name}",
             f"description: {description}",
-            f"tools: {TOOLS}",
             "model: inherit",
             "memory: local",
         ]
@@ -192,7 +188,7 @@ def render_command_skills(target: Path) -> None:
         name = command_file.stem
         description = metadata.get("description", f"Run /{name}")
         description = description.replace(
-            "Engram persistent memory", "Claude project memory"
+            "Engram persistent memory", "Neurox persistent memory"
         )
         agent_name = metadata.get("agent", "manager")
         transformed = normalize_command_body(body)
