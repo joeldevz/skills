@@ -1,66 +1,163 @@
-# Skills for OpenCode and Claude Code
+<div align="center">
 
-Repositorio con un workflow compartido de skills, agentes y slash commands para OpenCode y Claude Code.
+# Skills
 
-## Estructura
+**Dale a tu agente de IA un equipo de sub-agentes especializados y un flujo de trabajo profesional.**
 
-```text
-opencode/
-  opencode.json
-  commands/         # 15 slash commands para OpenCode
-  skills/           # skills compartidas: prd, nestjs-patterns, ts advanced
-  templates/
-  plugins/
-  evals/
+Un solo instalador. Funciona con Claude Code y OpenCode.
 
-claude-code/
-  CLAUDE.md         # overlay para el orquestador en Claude Code
+[Quick Start](#quick-start) · [Como funciona](#como-funciona) · [Commands](#commands) · [Herramientas soportadas](#herramientas-soportadas) · [Modos de trabajo](#modos-de-trabajo) · [Instalacion](docs/installation.md) · [Docs](#documentacion)
 
-scripts/
-  setup.sh
-  install_claude_assets.py
+</div>
+
+---
+
+## El Problema
+
+Los asistentes de IA para codigo son potentes, pero fallan con features complejas:
+
+- **Sobrecarga de contexto** — Conversaciones largas llevan a compresion, detalles perdidos, alucinaciones
+- **Sin estructura** — "Implementa login con JWT" produce resultados impredecibles
+- **Sin gate de revision** — El codigo se escribe antes de que alguien acuerde que construir
+- **Sin memoria** — Las decisiones viven en el historial del chat que desaparece
+
+## La Solucion
+
+**Skills** es un workflow portable de planificacion y ejecucion donde un orquestador liviano delega todo el trabajo real a agentes especializados. Cada agente arranca con contexto fresco, ejecuta una tarea acotada, y devuelve un resultado estructurado.
+
+```
+TU: "Quiero agregar export CSV a la app"
+
+ORQUESTADOR (delega, contexto minimo):
+  → lanza PLANNER        → retorna: discovery + PLAN.md
+  → te muestra el plan, vos apruevas
+  → lanza CODER          → retorna: paso 1 implementado
+  → te muestra el diff, vos revisas
+  → lanza CODER          → retorna: paso 2 implementado
+  → ...hasta completar el plan
+  → /review              → quality gate final
+  → /commit + /pr        → entrega limpia
 ```
 
-## Qué instala en cada herramienta
+**La clave**: el orquestador NUNCA hace trabajo real directamente. Delega a sub-agentes, trackea estado en `PLAN.md`, y sintetiza resumenes. Esto mantiene el hilo principal liviano y estable.
 
-### OpenCode
+**Neurox** como sistema de memoria persistente entre sesiones — las decisiones, patrones y descubrimientos sobreviven entre conversaciones.
 
-- **3 agentes** con roles claros: planner, manager y coder
-- **15 commands** para todo el ciclo: onboard, planificar, estimar, ejecutar, revisar, testear, commitear, abrir PRs, y guardar memoria
-- **Neurox MCP** como sistema de memoria persistente entre sesiones
-- **Context7 MCP** para documentacion en vivo de librerias externas
-- **Templates** para convenciones, commits/PRs, y 5 tipos de plan (CRUD, bugfix, integration, refactor, feature)
-- **Skills** de PRD, TypeScript avanzado, y patrones NestJS DDD+CQRS
-- **Eval framework** con 9 golden tests de regresion para los 3 agentes
+## Como funciona
 
-### Claude Code
+Tres conceptos:
 
-- **3 agentes instalables** en `~/.claude/agents`: `planner`, `manager`, `coder`
-- **15 slash skills** en `~/.claude/skills` con los mismos nombres operativos: `/plan`, `/execute`, `/review`, etc.
-- **Overlay de `CLAUDE.md`** para mantener el mismo workflow de `PLAN.md`, step-by-step y human review loop
-- **Neurox MCP configurado en `~/.claude.json`** para que Claude Code use la misma memoria persistente
-- **Compatibilidad con Claude subagents**: el hilo principal actua como orquestador y delega trabajo acotado a los agentes instalados
+1. **Arquitectura delegate-first** — Tu agente principal se convierte en orquestador y delega todo a sub-agentes especializados. Cada uno recibe contexto fresco, hace trabajo acotado, y devuelve solo un resumen. [Ver agentes →](#agentes)
 
-## Setup rapido
+2. **Plan-Driven Development** — Un flujo estructurado: `onboard → plan → estimate → execute → review → commit → pr`. Cada fase es un skill que cualquier agente puede correr. [Ver commands →](#commands)
+
+3. **Memoria persistente** — Neurox guarda decisiones, bugs, patrones y preferencias. El orquestador los consulta automaticamente al empezar cada sesion. [Ver memoria →](#memoria-persistente)
+
+## Quick Start
 
 ```bash
-# Opcion 1: instalar todo lo compatible en la maquina
+# Opcion 1: instalar todo lo compatible
 git clone git@github.com:joeldevz/skills.git
 cd skills
 ./scripts/setup.sh --all
 
-# Opcion 2: instalar solo OpenCode
+# Opcion 2: solo OpenCode
 ./scripts/setup.sh --opencode
 
-# Opcion 3: instalar solo Claude Code
+# Opcion 3: solo Claude Code
 ./scripts/setup.sh --claude
 ```
 
-El setup hace backup de la configuracion existente antes de escribir. En OpenCode tambien restaura tu API key de Context7 si ya la tenias, y en Claude registra Neurox en `~/.claude.json`.
+Eso es todo. El script detecta que herramientas tenes instaladas y las configura.
 
-Requisito: `neurox` debe estar instalado y disponible en `PATH` para que OpenCode y Claude usen la misma memoria persistente.
+> **Requisito**: `neurox` debe estar instalado y disponible en `PATH` para memoria persistente.
 
-## Flujo de trabajo completo
+El setup hace backup de tu configuracion existente antes de escribir.
+
+Para instalacion manual, verificacion post-instalacion, y troubleshooting, ver [docs/installation.md](docs/installation.md).
+
+## Herramientas soportadas
+
+| Herramienta | Sub-agentes | Setup |
+|-------------|-------------|-------|
+| Claude Code | Full (Agent tool) | `./scripts/setup.sh --claude` |
+| OpenCode | Full (delegate/task) | `./scripts/setup.sh --opencode` |
+
+> **Full** = el orquestador delega a sub-agentes con contexto independiente.
+
+## Agentes
+
+| Agente | Rol | Que hace |
+|--------|-----|----------|
+| `planner` | Discovery y planificacion | Inicia memoria con Neurox, lee convenciones, explora el codebase, hace preguntas, genera `PLAN.md` |
+| `manager` | Orquestacion y review | Lee `PLAN.md`, ejecuta un paso por vez, delega a `coder`, exige revision humana |
+| `coder` | Implementacion acotada | Implementa una tarea, sigue patrones locales, consulta Context7 para docs, verifica antes de entregar |
+
+### Estados de PLAN.md
+
+| Estado | Significado |
+|--------|-------------|
+| `[ ]` | Pendiente |
+| `[~]` | En progreso |
+| `[!]` | Necesita fixes |
+| `[x]` | Completado |
+
+## Commands
+
+### Planificacion
+
+| Command | Que hace |
+|---------|----------|
+| `/onboard` | Explora el proyecto: stack, arquitectura, convenciones |
+| `/plan <tarea>` | Investiga el codebase y genera `PLAN.md` |
+| `/plan-rewrite` | Revisa y mejora un `PLAN.md` existente |
+| `/estimate` | Estima esfuerzo (XS–XL) por paso del plan |
+
+### Ejecucion
+
+| Command | Que hace |
+|---------|----------|
+| `/execute` | Ejecuta el siguiente paso del plan |
+| `/apply-feedback <texto>` | Aplica correcciones al paso actual |
+| `/diff` | Muestra cambios del paso con anotaciones |
+| `/rollback [step]` | Deshace el ultimo paso (pide confirmacion) |
+| `/status` | Muestra progreso del `PLAN.md` |
+
+### Calidad
+
+| Command | Que hace |
+|---------|----------|
+| `/test [modulo]` | Genera o corre tests del paso actual |
+| `/review` | Quality gate: verifica convenciones, tipos, arquitectura, tests |
+
+### Documentacion y memoria
+
+| Command | Que hace |
+|---------|----------|
+| `/docs <lib> <tema>` | Busca docs en vivo via Context7 MCP |
+| `/context [obs]` | Guarda descubrimientos en memoria persistente |
+
+### Git
+
+| Command | Que hace |
+|---------|----------|
+| `/commit` | Crea commit con Conventional Commits |
+| `/pr` | Abre pull request con `gh` |
+
+## Modos de trabajo
+
+|  | Supervisado | Vibe Coding |
+|---|---|---|
+| **Agentes** | planner + manager + coder | 1 solo (`vibe`) |
+| **PLAN.md** | Obligatorio | Opcional |
+| **Review humano** | Despues de cada paso | No existe |
+| **Commands** | 15 | 4 (`/do`, `/fix`, `/commit`, `/done`) |
+| **Velocidad** | Controlada | Maxima |
+| **Cuando usarlo** | Features grandes, decisiones de arquitectura, equipos | Exploraciones rapidas, bugfixes, features chicos |
+
+> El modo vibe coding esta en `vibe-coding/`. Para usarlo: `./scripts/setup.sh --opencode` con la config de vibe.
+
+## Flujo recomendado
 
 ```text
 /onboard                        # explorar el proyecto
@@ -70,54 +167,114 @@ Requisito: `neurox` debe estar instalado y disponible en `PATH` para que OpenCod
 /diff                           # ver los cambios con anotaciones
 /test                           # generar/correr tests del paso
 /review                         # quality gate antes de commit
-/apply-feedback <correcciones>  # aplicar feedback
+/apply-feedback <correcciones>  # aplicar feedback si hay issues
 /commit                         # commit con Conventional Commits
 /pr                             # abrir pull request
 /context                        # guardar aprendizajes en memoria
 ```
 
-En Claude Code esos comandos se instalan como skills slash en `~/.claude/skills/`.
+## Memoria persistente
 
-## Commands disponibles
+**Neurox** es el sistema de memoria que conecta sesiones de trabajo:
 
-| Command | Descripcion |
-|---------|-------------|
-| `/onboard` | Explora el proyecto: stack, arquitectura, convenciones |
-| `/plan <tarea>` | Investiga el codebase y genera PLAN.md |
-| `/plan-rewrite` | Revisa y mejora un PLAN.md existente |
-| `/estimate` | Estima esfuerzo (XS-XL) por paso del plan |
-| `/execute` | Ejecuta el siguiente paso del plan |
-| `/apply-feedback <texto>` | Aplica correcciones al paso actual |
-| `/diff` | Muestra cambios del paso con anotaciones |
-| `/test [modulo]` | Genera o corre tests del paso actual |
-| `/review` | Quality gate: verifica convenciones, tipos, arch, tests |
-| `/rollback [step]` | Deshace el ultimo paso (pide confirmacion) |
-| `/status` | Muestra progreso del PLAN.md |
-| `/context [obs]` | Guarda descubrimientos en memoria persistente |
-| `/docs <lib> <tema>` | Busca docs en vivo via Context7 |
-| `/commit` | Crea commit con Conventional Commits |
-| `/pr` | Abre pull request con `gh` |
+- `session_start` — Inicia una sesion con titulo, directorio y branch
+- `context` — Carga memorias relevantes al namespace actual
+- `recall` — Busca decisiones, patrones o bugs previos
+- `save` — Guarda descubrimientos con tags y archivos relacionados
+- `session_end` — Cierra la sesion con un resumen
 
-## Convenciones clave
+El setup configura Neurox automaticamente en ambas herramientas.
 
-- Value Objects y objetos de dominio en la capa de dominio — nunca primitivos
-- DDD + CQRS: commands para escritura, queries para lectura
-- Controllers solo inyectan CommandBus/QueryBus
-- DTOs en la frontera HTTP con Swagger + class-validator
-- Review humano obligatorio entre pasos de ejecucion
-- Commits con Conventional Commits
+## Estructura del proyecto
+
+```text
+skills/
+├── claude-code/
+│   └── CLAUDE.md              # overlay para el orquestador en Claude Code
+├── opencode/
+│   ├── opencode.json          # configuracion base de agentes y MCPs
+│   ├── commands/              # 15 slash commands
+│   ├── skills/                # prd, nestjs-patterns, ts advanced types
+│   ├── templates/             # convenciones, commits, 5 tipos de plan
+│   ├── evals/                 # 9 golden tests de regresion
+│   └── plugins/
+├── vibe-coding/
+│   ├── opencode.json          # config del modo autonomo
+│   └── commands/              # 4 commands minimos
+├── skills/
+│   └── prd/                   # skill compartida de PRD
+└── scripts/
+    ├── setup.sh               # instalador principal
+    └── install_claude_assets.py
+```
+
+## Que instala en cada herramienta
+
+### Claude Code
+
+- **3 agentes** en `~/.claude/agents`: `planner`, `manager`, `coder`
+- **15 slash skills** en `~/.claude/skills` con los mismos nombres operativos
+- **Overlay de `CLAUDE.md`** para mantener el mismo workflow
+- **Neurox MCP** configurado en `~/.claude.json`
+
+### OpenCode
+
+- **3 agentes** con roles claros en `opencode.json`
+- **15 commands** para todo el ciclo
+- **Neurox + Context7 MCP** como sistemas externos
+- **Templates** para convenciones, commits/PRs, y 5 tipos de plan
+- **Skills** de PRD, TypeScript avanzado, y patrones NestJS DDD+CQRS
+- **Eval framework** con 9 golden tests
+
+## Eval Framework
+
+9 golden tests en `evals/golden/` que validan el comportamiento de los agentes:
+
+| Test | Agente | Valida |
+|------|--------|--------|
+| 01 | planner | Lee CONVENTIONS.md antes de preguntar |
+| 02 | planner | Usa template PLAN-crud para tareas CRUD |
+| 03 | manager | Lee PLAN.md antes de hacer nada |
+| 04 | manager | Se detiene tras un paso y pide review |
+| 05 | coder | Lee codigo existente antes de escribir |
+| 06 | coder | Corre verificacion antes de reportar exito |
+| 07 | manager | /review lee CONVENTIONS.md y git diff |
+| 08 | coder | /test lee tests existentes antes de generar |
+| 09 | manager | /rollback pide confirmacion antes de revertir |
+
+```bash
+./evals/run-evals.sh
+./evals/run-evals.sh --agent coder
+```
+
+## Documentacion
+
+| Tema | Descripcion |
+|------|-------------|
+| [Instalacion](docs/installation.md) | Guia completa: requisitos, setup automatico/manual, verificacion, troubleshooting |
+| [OpenCode setup](opencode/README.md) | Configuracion detallada de OpenCode |
+| [Claude Code setup](claude-code/CLAUDE.md) | Overlay y reglas para Claude Code |
+| [Vibe Coding](vibe-coding/README.md) | Modo autonomo con un solo agente |
 
 ## Claude Code: nota importante
 
-Claude Code no permite que un subagente lance otro subagente. Para mantener el mismo comportamiento general:
+Claude Code no permite que un subagente lance otro subagente. Para mantener el mismo comportamiento:
 
-- el hilo principal de Claude hace de orquestador
-- `planner` se usa para discovery y planes
-- `coder` se usa para implementacion acotada
-- `manager` se instala como agente de apoyo para scoping y review, pero la orquestacion multi-agente se queda en el hilo principal
-
-Eso mantiene el mismo flujo practico: `PLAN.md` como fuente de verdad, un paso por vez, y review humana obligatoria.
+- El hilo principal de Claude hace de orquestador
+- `planner` y `coder` se usan como subagentes
+- `manager` es agente de apoyo para scoping y review
+- La orquestacion multi-agente se queda en el hilo principal
 
 ## Recomendacion
 
-En cada proyecto nuevo, copia `opencode/templates/CONVENTIONS.md` a la raiz del repo y ajustalo al stack real del proyecto. Eso hace que los agentes sean mucho mas consistentes para todo el equipo.
+En cada proyecto nuevo, copia `opencode/templates/CONVENTIONS.md` a la raiz del repo y ajustalo al stack real. Eso hace que los agentes sean mucho mas consistentes.
+
+## Licencia
+
+MIT
+
+---
+
+<div align="center">
+  <sub>Built by <a href="https://github.com/joeldevz">joeldevz</a></sub>
+</div>
