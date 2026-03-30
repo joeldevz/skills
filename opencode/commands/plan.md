@@ -1,6 +1,6 @@
 ---
 description: Create a project plan from a task request
-agent: planner
+agent: tech-planner
 ---
 
 Plan the task "{argument}" for the current project.

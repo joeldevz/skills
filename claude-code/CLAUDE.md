@@ -1,29 +1,67 @@
-# Skills Team Workflow
+# Multi-Agent Orchestration System
 
-This repository installs a portable planning-and-execution workflow for Claude Code.
+This repository installs a multi-agent system for Claude Code with auto-validation.
 
-Available agents:
-- `planner` for discovery, requirements, and `PLAN.md`
-- `manager` for step selection, review-loop orchestration, and coder handoff generation
-- `coder` for bounded implementation, tests, and verification
+## Agent Team
 
-Working rules:
-- Keep `PLAN.md` as the visible source of truth
-- Execute one approved step at a time
-- Require human review after every implementation pass
-- Delegate bounded code changes to `coder`
-- Prefer existing project conventions over inventing new patterns
-- Use Neurox as the durable memory system via `neurox_session_start`, `neurox_context`, `neurox_recall`, and `neurox_save`
+| Agent | Role | Invoke as |
+|-------|------|-----------|
+| `product-planner` | SPEC.md — what and why (business context) | Task subagent |
+| `tech-planner` | PLAN.md — how (technical, prescriptive steps with How section) | Task subagent |
+| `coder` | Implements one step at a time (fast model) | Task subagent |
+| `verifier` | Lint + build + tests after each coder step | Task subagent |
+| `test-reviewer` | Reviews test coherence at end of plan | Task subagent |
+| `security` | Adversarial security judge (launched x2 in parallel) | Task subagent |
+| `skill-validator` | Validates code against project skill registry | Task subagent |
+| `manager` | Legacy — scoping/review companion (deprecated, use orchestrator flow) | Task subagent |
 
-Claude Code constraint:
-- Claude subagents cannot spawn other subagents
-- Because of that, the main conversation is the top-level orchestrator
-- Use `planner` and `coder` as subagents when helpful
-- Use `manager` as a scoping/review helper, but keep any multi-agent orchestration in the main conversation
+## Critical Constraint
 
-Installed slash skills include `/onboard`, `/plan`, `/plan-rewrite`, `/estimate`, `/execute`, `/apply-feedback`, `/diff`, `/status`, `/rollback`, `/test`, `/review`, `/docs`, `/context`, `/commit`, and `/pr`.
+**Claude Code subagents cannot spawn other subagents.**
+The main conversation IS the orchestrator. It coordinates all work by launching Task subagents.
 
-Installer note:
-- `scripts/setup.sh --claude` also writes a user-level Neurox MCP entry to `~/.claude.json` so Claude Code can call the Neurox tools directly.
+## Orchestration Flow
 
-For planning-heavy work, start with `/onboard` or `/plan`.
+```
+User gives task
+│
+├── Phase 1: PLANNING
+│   ├── Launch product-planner + tech-planner in PARALLEL
+│   └── Produces: SPEC.md + PLAN.md
+│
+├── Phase 2: EXECUTION (per step)
+│   ├── Launch coder → then verifier
+│   └── If verifier fails: retry coder (max 2) with verifier_feedback
+│
+├── Phase 3: VALIDATION (after all steps)
+│   ├── Launch test-reviewer + security in PARALLEL
+│   │   └── Security: 2 judges in parallel → synthesize → fix → re-judge
+│   └── Launch skill-validator
+│
+└── Phase 4: COMPLETION
+    └── Final synthesis → suggest /commit or /pr
+```
+
+## Working Rules
+
+- The main thread NEVER writes application code — always delegate to `coder`
+- ALWAYS run `verifier` after every `coder` step — no exceptions
+- Launch sub-agents in PARALLEL when there are no data dependencies
+- Inject compact skills from the skill registry before every code-touching delegation
+- Use Neurox (`neurox_session_start`, `neurox_context`, `neurox_recall`, `neurox_save`) for persistent memory
+- Keep `PLAN.md` as the visible source of truth for progress
+- Save orchestrator state to Neurox after each phase transition
+
+## Installed Skills
+
+Slash skills: `/onboard`, `/plan`, `/plan-rewrite`, `/estimate`, `/execute`, `/apply-feedback`, `/diff`, `/status`, `/rollback`, `/test`, `/review`, `/docs`, `/context`, `/commit`, `/pr`.
+
+Shared conventions in `~/.claude/skills/_shared/`:
+- `return-envelope.md` — standard return format for all sub-agents
+- `neurox-protocol.md` — memory protocol
+- `skill-resolver.md` — skill injection protocol for the orchestrator
+
+## Installer
+
+Run `scripts/setup.sh --claude` to install/update all agents, skills, and templates.
+The installer also writes a Neurox MCP entry to `~/.claude.json`.

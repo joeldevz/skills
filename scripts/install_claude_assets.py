@@ -15,58 +15,6 @@ OPENCODE_TEMPLATES = ROOT / "opencode" / "templates"
 CLAUDE_OVERLAY = ROOT / "claude-code" / "CLAUDE.md"
 
 
-MANAGER_PROMPT = """EXECUTION ORCHESTRATOR (CLAUDE MAIN-THREAD COMPANION)
-=====================================================
-
-You are the implementation manager for PLAN-driven work inside Claude Code.
-
-PRIMARY OBJECTIVE:
-Keep `PLAN.md` as the source of truth, advance one approved step at a time, and prepare bounded implementation handoffs for the `coder` agent.
-
-IMPORTANT CLAUDE CODE CONSTRAINT:
-- Claude subagents cannot spawn other subagents.
-- Because of that, when you are invoked as a subagent you do NOT attempt to delegate work yourself.
-- Instead, you select the correct step, build the exact coder handoff, and return the orchestration summary that the main Claude conversation should use.
-
-CORE RULES:
-1. Read `PLAN.md` first on every run.
-2. Work one step at a time. Prefer `[!] needs fixes` before `[ ] pending`.
-3. Do not implement application code.
-4. Keep the human review loop mandatory after each implementation pass.
-5. Keep plan state explicit and recommend the next status update.
-
-STATUS MODEL:
-- `[ ] pending`
-- `[~] in progress`
-- `[!] needs fixes`
-- `[x] done`
-
-WHEN INVOKED:
-1. Read `PLAN.md` and identify the next step to execute or review.
-2. Read any obviously relevant files or conventions needed to scope that step safely.
-3. Produce a bounded handoff for `coder` with:
-   - step title
-   - what/why/where/acceptance
-   - relevant previous-step context
-   - verification expectations
-   - instruction to read local patterns first
-4. If implementation already happened, evaluate the results and recommend whether the step should stay `[~] in progress`, move to `[!] needs fixes`, or become ready for human approval.
-5. Return a concise orchestration note for the human.
-
-RETURN FORMAT:
-- Selected step
-- Recommended PLAN.md status change
-- Coder handoff prompt
-- Human review handoff
-- Risks or open questions
-
-DO NOT:
-- write application code
-- silently advance multiple steps
-- mark a step done without explicit human approval
-"""
-
-
 def parse_frontmatter(text: str) -> tuple[dict[str, str], str]:
     if not text.startswith("---\n"):
         return {}, text
@@ -118,17 +66,22 @@ def render_agents(target: Path) -> None:
     config = json.loads(OPENCODE_CONFIG.read_text(encoding="utf-8"))
     agents = config["agent"]
 
-    skill_map = {
-        "planner": ["prd"],
-        "manager": [],
+    skill_map: dict[str, list[str]] = {
+        "orchestrator": ["security"],
+        "product-planner": ["prd"],
+        "tech-planner": ["prd", "nestjs-patterns", "typescript-advanced-types"],
         "coder": ["nestjs-patterns", "typescript-advanced-types"],
+        "verifier": [],
+        "test-reviewer": [],
+        "security": ["security"],
+        "skill-validator": [],
+        "manager": [],
     }
 
-    for name in ("planner", "manager", "coder"):
-        agent = agents[name]
-        prompt = MANAGER_PROMPT if name == "manager" else agent["prompt"]
+    for name, agent in agents.items():
+        prompt = agent["prompt"]
         description = agent["description"]
-        skills = skill_map[name]
+        skills = skill_map.get(name, [])
 
         frontmatter = [
             "---",
@@ -157,6 +110,17 @@ def render_shared_skills(target: Path) -> None:
         shutil.copytree(skill_dir, destination)
 
 
+def render_shared_conventions(target: Path) -> None:
+    """Copy _shared/ protocol files to ~/.claude/skills/_shared/."""
+    src = OPENCODE_SKILLS / "_shared"
+    if not src.exists():
+        return
+    destination = target / "skills" / "_shared"
+    if destination.exists():
+        shutil.rmtree(destination)
+    shutil.copytree(src, destination)
+
+
 def render_templates(target: Path) -> None:
     destination = target / "templates"
     if destination.exists():
@@ -165,9 +129,9 @@ def render_templates(target: Path) -> None:
 
 
 def command_intro(command_name: str, agent_name: str) -> str:
-    if agent_name == "planner":
+    if agent_name in ("planner", "tech-planner"):
         return (
-            f"Use the `planner` subagent for `/{command_name}` unless the task is too small to justify delegation.\n"
+            f"Use the `tech-planner` subagent for `/{command_name}` unless the task is too small to justify delegation.\n"
             "Keep the final answer concise and action-oriented.\n"
         )
     if agent_name == "coder":
@@ -176,9 +140,9 @@ def command_intro(command_name: str, agent_name: str) -> str:
             "Keep the work bounded to the requested scope.\n"
         )
     return (
-        f"Run `/{command_name}` from the main Claude conversation following the `manager` workflow.\n"
-        "Important: Claude subagents cannot spawn other subagents, so keep orchestration in the main thread and delegate any bounded code changes directly to `coder`.\n"
-        "Use the installed `manager` agent as a review or scoping helper when useful, but do not rely on it to launch `coder`.\n"
+        f"Run `/{command_name}` from the main conversation following the orchestrator workflow.\n"
+        "Important: Claude subagents cannot spawn other subagents, so keep orchestration in the main thread.\n"
+        "Delegate bounded code changes to `coder`, planning to `tech-planner`, and reviews to specialized agents.\n"
     )
 
 
@@ -214,6 +178,7 @@ def main() -> None:
     target.mkdir(parents=True, exist_ok=True)
     render_agents(target)
     render_shared_skills(target)
+    render_shared_conventions(target)
     render_templates(target)
     render_command_skills(target)
     print(f"Rendered Claude assets in {target}")
