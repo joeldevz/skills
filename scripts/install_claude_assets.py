@@ -39,6 +39,17 @@ def dump_yaml_list(items: list[str], indent: int = 0) -> str:
     return "\n".join(f"{prefix}- {item}" for item in items)
 
 
+NEUROX_SKILL_BLOCK = """
+## Neurox Memory (obligatorio)
+
+Esta skill DEBE usar Neurox para memoria persistente:
+- **Al iniciar**: `neurox_recall(query="{tema relevante}")` — buscar contexto previo
+- **Cross-namespace**: `neurox_recall(query="{tema}")` sin namespace — inteligencia de otros proyectos
+- **Al descubrir algo**: `neurox_save(...)` inmediatamente — no esperar al final
+- Si no tienes acceso a Neurox tools, documenta en tu output qué información guardar.
+"""
+
+
 def normalize_command_body(body: str) -> str:
     replacements = {
         '"{argument}"': '"$ARGUMENTS"',
@@ -170,6 +181,7 @@ def render_command_skills(target: Path) -> None:
         content += command_intro(name, agent_name)
         content += "\n"
         content += transformed
+        content += NEUROX_SKILL_BLOCK
         write_text(target / "skills" / name / "SKILL.md", content)
 
 

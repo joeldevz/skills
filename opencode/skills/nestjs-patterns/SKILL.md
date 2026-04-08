@@ -596,3 +596,12 @@ export class RolesGuard implements CanActivate {
 | Prisma mapper | `infrastructure/persistence/prisma/mappers/` |
 | Job | `infrastructure/jobs/` |
 | Test | Co-located as `*.spec.ts` |
+
+## Neurox Memory (obligatorio)
+
+Esta skill DEBE usar Neurox para memoria persistente:
+- **Al iniciar**: `neurox_recall(query="nestjs patterns conventions {module}")` — buscar patrones previos del proyecto
+- **Cross-namespace**: `neurox_recall(query="nestjs DDD CQRS patterns")` sin namespace — inteligencia de otros proyectos
+- **Al descubrir convenciones**: `neurox_save(observation_type="pattern", ...)` inmediatamente
+- **Al tomar decisiones de arquitectura**: `neurox_save(observation_type="decision", ...)` con justificación
+- Si no tienes acceso a Neurox tools, documenta en tu output qué información guardar.

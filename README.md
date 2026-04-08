@@ -56,23 +56,30 @@ Tres conceptos:
 ## Quick Start
 
 ```bash
-# Opcion 1: instalar todo lo compatible
+# Opcion 1: instalar todo lo compatible (interactivo)
 git clone git@github.com:joeldevz/skills.git
 cd skills
-./scripts/setup.sh --all
+./clasing-skill
 
-# Opcion 2: solo OpenCode
-./scripts/setup.sh --opencode
+# Opcion 2: solo OpenCode (no interactivo)
+./clasing-skill --non-interactive --package skills --target opencode --version skills=latest --trust-setup-scripts
 
-# Opcion 3: solo Claude Code
-./scripts/setup.sh --claude
+# Opcion 3: solo Claude Code (no interactivo)
+./clasing-skill --non-interactive --package skills --target claude --version skills=latest --trust-setup-scripts
+
+# Opcion 4: instalar tambien neurox
+./clasing-skill --non-interactive --package skills --package neurox --target both --version skills=latest --version neurox=latest --trust-setup-scripts
 ```
 
-Eso es todo. El script detecta que herramientas tenes instaladas y las configura.
+Eso es todo. El instalador detecta que herramientas tenes instaladas y las configura.
+
+En modo `--non-interactive`, **no** se muestra confirmacion final; si falta algun dato requerido, el comando falla con exit code `2`.
 
 > **Requisito**: `neurox` debe estar instalado y disponible en `PATH` para memoria persistente.
 
 El setup hace backup de tu configuracion existente antes de escribir.
+
+> **Nota**: `./clasing-skill` es el instalador unificado. El script `./scripts/setup.sh` se usa internamente como instalador especifico del paquete `skills`.
 
 Para instalacion manual, verificacion post-instalacion, y troubleshooting, ver [docs/installation.md](docs/installation.md).
 

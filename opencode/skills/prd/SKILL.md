@@ -156,3 +156,12 @@ Divide KPIs into these 4 dimensions (crucial for modern/AI software):
 
 - **Benchmark**: Test with 50 common developer questions.
 - **Pass Rate**: 90% must match expected citations.
+
+## Neurox Memory (obligatorio)
+
+Esta skill DEBE usar Neurox para memoria persistente:
+- **Al iniciar**: `neurox_recall(query="product requirements {feature}")` — buscar specs y decisiones previas
+- **Cross-namespace**: `neurox_recall(query="product decisions user stories")` sin namespace — inteligencia de otros proyectos
+- **Al definir requisitos**: `neurox_save(observation_type="decision", ...)` con contexto de negocio
+- **Al descubrir edge cases**: `neurox_save(observation_type="discovery", ...)` inmediatamente
+- Si no tienes acceso a Neurox tools, documenta en tu output qué información guardar.

@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://clasing.dev/schemas/skills.config.schema.json",
+  "title": "Clasing Skill Configuration",
+  "description": "User intent and defaults for clasing-skill installations",
+  "type": "object",
+  "required": ["version", "defaults", "packages"],
+  "properties": {
+    "version": {
+      "description": "Schema version",
+      "const": 1
+    },
+    "defaults": {
+      "type": "object",
+      "description": "Default settings for interactive mode",
+      "required": ["interactive", "targets"],
+      "properties": {
+        "interactive": {
+          "type": "boolean",
+          "description": "Whether to run in interactive mode by default"
+        },
+        "targets": {
+          "type": "array",
+          "description": "Default target environments",
+          "items": {
+            "enum": ["claude", "opencode"]
+          },
+          "uniqueItems": true
+        }
+      }
+    },
+    "packages": {
+      "type": "object",
+      "description": "Per-package configuration",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["version", "targets"],
+        "properties": {
+          "version": {
+            "type": "string",
+            "description": "Requested version selector"
+          },
+          "targets": {
+            "type": "array",
+            "description": "Target environments for this package",
+            "items": {
+              "enum": ["claude", "opencode"]
+            },
+            "uniqueItems": true
+          }
+        }
+      }
+    }
+  }
+}

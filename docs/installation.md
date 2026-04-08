@@ -41,17 +41,29 @@ git clone git@github.com:joeldevz/skills.git
 cd skills
 ```
 
-### Instalar todo lo compatible
+### Instalar con el CLI unificado (recomendado)
 
 ```bash
-./scripts/setup.sh --all
+# Modo interactivo - selecciona paquetes, targets y versiones
+./clasing-skill
+
+# Instalar skills para ambos targets
+./clasing-skill --non-interactive --package skills --target both --version skills=latest --trust-setup-scripts
+
+# Instalar skills y neurox
+./clasing-skill --non-interactive --package skills --package neurox --target both --trust-setup-scripts
 ```
 
-El script detecta automaticamente si tenes `opencode` y/o `claude` instalados y configura lo que corresponda.
+`--non-interactive` omite la confirmacion final. Si falta algun valor obligatorio, el comando termina con error antes de instalar.
 
-### Instalar solo una herramienta
+### Instalar con el script legacy
+
+> **Nota**: `./scripts/setup.sh` es el instalador interno del paquete `skills`. Se recomienda usar `./clasing-skill` en su lugar.
 
 ```bash
+# Todo lo compatible
+./scripts/setup.sh --all
+
 # Solo OpenCode
 ./scripts/setup.sh --opencode
 

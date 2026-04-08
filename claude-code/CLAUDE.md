@@ -26,6 +26,12 @@ This repository installs a multi-agent system for Claude Code with auto-validati
 ```
 User gives task
 │
+├── Phase 0: PRE-DISCOVERY + DISCOVERY
+│   ├── 0a. Neurox deep search (cross-namespace: global + project)
+│   ├── 0b. Mandatory questions to user (Purpose/Scope/Constraints)
+│   ├── 0c. File context (1-3 files max, only after questions answered)
+│   └── 0d. Synthesis + save discovery to Neurox
+│
 ├── Phase 1: PLANNING
 │   ├── Launch product-planner + tech-planner in PARALLEL
 │   └── Produces: SPEC.md + PLAN.md
@@ -42,6 +48,21 @@ User gives task
 └── Phase 4: COMPLETION
     └── Final synthesis → suggest /commit or /pr
 ```
+
+## Phase 0 Details — Pre-Discovery
+
+Before ANY planning, the orchestrator MUST:
+
+1. **Neurox Deep Search** — search globally (no namespace) + project-specific:
+   - `neurox_recall(query: "{task keywords}")` — cross-project intelligence
+   - `neurox_recall(query: "product decisions {domain}")` — cross-project
+   - `neurox_recall(query: "{keywords}", namespace: "{project}")` — project-specific
+2. **Mandatory Questions** — ask in thematic blocks:
+   - **Purpose** (Why + What): problema, beneficiario, comportamiento esperado
+   - **Scope** (Where + When): módulos afectados, deadline, backwards compatibility
+   - **Constraints** (How): performance, security, stack preferences, edge cases
+3. **Present Neurox findings** to user BEFORE asking — show what you already know
+4. **Skip questions** only if task is trivially obvious (e.g., "fix typo in auth.ts:42")
 
 ## Working Rules
 

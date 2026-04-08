@@ -96,3 +96,12 @@ Both judges pass clean.
 Check `**Skill Resolution**` in each judge response:
 - `injected` → compact rules were received correctly ✅
 - `fallback-registry` or `none` → skill cache lost (compaction). Re-read registry and inject in all future delegations.
+
+## Neurox Memory (obligatorio)
+
+Esta skill DEBE usar Neurox para memoria persistente:
+- **Al iniciar**: `neurox_recall(query="security vulnerabilities {module}")` — buscar hallazgos previos
+- **Cross-namespace**: `neurox_recall(query="security patterns")` sin namespace — inteligencia de otros proyectos
+- **Al encontrar vulnerabilidades**: `neurox_save(observation_type="gotcha", ...)` inmediatamente
+- **Al resolver**: `neurox_save(observation_type="bugfix", ...)` con causa raíz y fix aplicado
+- Si no tienes acceso a Neurox tools, documenta en tu output qué información guardar.
