@@ -279,6 +279,92 @@ class TestResolveRequest(unittest.TestCase):
         mock_prompt_targets.assert_called_once()
         mock_prompt_version.assert_called_once()
 
+    @patch("scripts.clasing_skill.cli.resolve_version")
+    @patch("scripts.clasing_skill.cli.prompts.prompt_for_packages")
+    @patch("scripts.clasing_skill.cli.prompts.prompt_for_targets")
+    @patch("scripts.clasing_skill.cli.prompts.prompt_for_version")
+    @patch("scripts.clasing_skill.cli.list_versions")
+    def test_interactive_workspace_default_when_latest_and_workspace_available(
+        self,
+        mock_list_versions: MagicMock,
+        mock_prompt_version: MagicMock,
+        mock_prompt_targets: MagicMock,
+        mock_prompt_packages: MagicMock,
+        mock_resolve_version: MagicMock,
+    ) -> None:
+        """Interactive mode prefers 'workspace' as default when available and catalog default is 'latest'."""
+        mock_prompt_packages.return_value = ["skills"]
+        mock_prompt_targets.return_value = ["claude"]
+        # workspace is available in the list
+        mock_list_versions.return_value = ["workspace", "v1.0.0", "v0.9.0"]
+        mock_prompt_version.return_value = "workspace"
+        mock_resolve_version.return_value = _mock_resolved_version(
+            "workspace", "workspace"
+        )
+
+        parser = build_parser()
+        args = parser.parse_args([])  # No flags
+
+        # Empty config - no explicit version set by user
+        empty_config: dict = {
+            "version": 1,
+            "defaults": {},
+            "packages": {},
+        }
+
+        request, resolved = resolve_request(args, self.catalog, empty_config)
+
+        self.assertEqual(request.packages, ["skills"])
+        # Verify prompt_for_version was called with 'workspace' as the default
+        mock_prompt_version.assert_called_once()
+        call_args = mock_prompt_version.call_args
+        self.assertEqual(call_args[0][0], "skills")  # package_id
+        self.assertEqual(call_args[0][1], ["workspace", "v1.0.0", "v0.9.0"])  # versions
+        self.assertEqual(
+            call_args[0][2], "workspace"
+        )  # default_version should be workspace, not latest
+
+    @patch("scripts.clasing_skill.cli.resolve_version")
+    @patch("scripts.clasing_skill.cli.prompts.prompt_for_packages")
+    @patch("scripts.clasing_skill.cli.prompts.prompt_for_targets")
+    @patch("scripts.clasing_skill.cli.prompts.prompt_for_version")
+    @patch("scripts.clasing_skill.cli.list_versions")
+    def test_interactive_respects_explicit_config_version_over_workspace(
+        self,
+        mock_list_versions: MagicMock,
+        mock_prompt_version: MagicMock,
+        mock_prompt_targets: MagicMock,
+        mock_prompt_packages: MagicMock,
+        mock_resolve_version: MagicMock,
+    ) -> None:
+        """Interactive mode preserves explicit config version even when workspace is available."""
+        mock_prompt_packages.return_value = ["skills"]
+        mock_prompt_targets.return_value = ["claude"]
+        mock_list_versions.return_value = ["workspace", "v1.0.0"]
+        mock_prompt_version.return_value = "v1.0.0"
+        mock_resolve_version.return_value = _mock_resolved_version("v1.0.0", "v1.0.0")
+
+        parser = build_parser()
+        args = parser.parse_args([])
+
+        # Config with explicit version set by user
+        config_with_version = {
+            "version": 1,
+            "defaults": {},
+            "packages": {
+                "skills": {"version": "v1.0.0"},  # User explicitly set v1.0.0
+            },
+        }
+
+        request, resolved = resolve_request(args, self.catalog, config_with_version)
+
+        # Verify prompt_for_version was called with user's explicit version as default
+        mock_prompt_version.assert_called_once()
+        call_args = mock_prompt_version.call_args
+        self.assertEqual(
+            call_args[0][2], "v1.0.0"
+        )  # Should respect user's v1.0.0, not workspace
+
     def test_non_interactive_missing_package_exits(self) -> None:
         """Non-interactive mode exits if package missing."""
         parser = build_parser()

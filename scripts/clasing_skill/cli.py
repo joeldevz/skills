@@ -360,8 +360,20 @@ def resolve_request(
                     available_versions = list_versions(pkg) if pkg else []
                 except ResolutionError:
                     available_versions = []
+
+                # Prefer 'workspace' as default when available and computed default is 'latest'
+                # Only override catalog default; preserve explicit user config defaults
+                prompt_default = default_version
+                if (
+                    prompt_default == "latest"
+                    and "workspace" in available_versions
+                    and pkg
+                    and pkg.default_version == "latest"
+                ):
+                    prompt_default = "workspace"
+
                 version_selectors[package_id] = prompts.prompt_for_version(
-                    package_id, available_versions, default_version
+                    package_id, available_versions, prompt_default
                 )
             elif default_version:
                 # Non-interactive: use config default version
