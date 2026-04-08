@@ -119,17 +119,34 @@ install_opencode() {
   mkdir -p "$target_dir"
   rsync -a --exclude='node_modules' "$source_dir/" "$target_dir/"
 
-  if [ -d "$target_dir" ]; then
-    local latest_backup
-    latest_backup=$(python3 -c "
+  local latest_backup
+  latest_backup=$(python3 -c "
 from pathlib import Path
 base = Path('$target_dir').expanduser()
 matches = sorted(base.parent.glob(base.name + '.backup.*'), key=lambda p: p.stat().st_mtime, reverse=True)
 print(matches[0] if matches else '')
 " 2>/dev/null || true)
-    if [ -n "$latest_backup" ] && [ -f "$latest_backup/opencode.json" ]; then
-      local existing_key
-      existing_key=$(python3 -c "
+
+  if [ -n "$latest_backup" ] && [ -f "$latest_backup/opencode.json" ]; then
+    echo "Merging preserved MCP servers from backup..."
+    PYTHONPATH="$REPO_ROOT${PYTHONPATH:+:$PYTHONPATH}" python3 - "$target_dir/opencode.json" "$latest_backup/opencode.json" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+from scripts.clasing_skill.opencode_config import merge_opencode_mcp_config
+
+target_path = Path(sys.argv[1])
+backup_path = Path(sys.argv[2])
+
+installed = json.loads(target_path.read_text(encoding='utf-8'))
+backup = json.loads(backup_path.read_text(encoding='utf-8'))
+merged = merge_opencode_mcp_config(installed, backup)
+target_path.write_text(json.dumps(merged, indent=2, ensure_ascii=False) + '\n', encoding='utf-8')
+PY
+
+    local existing_key
+    existing_key=$(python3 -c "
 import json
 from pathlib import Path
 path = Path('$latest_backup/opencode.json')
@@ -142,9 +159,9 @@ except Exception:
     pass
 " 2>/dev/null || true)
 
-      if [ -n "$existing_key" ]; then
-        echo "Restoring your Context7 API key from backup..."
-        python3 -c "
+    if [ -n "$existing_key" ]; then
+      echo "Restoring your Context7 API key from backup..."
+      python3 -c "
 import json
 from pathlib import Path
 path = Path('$target_dir/opencode.json')
@@ -153,7 +170,6 @@ data['mcp']['context7']['headers']['CONTEXT7_API_KEY'] = '$existing_key'
 data['mcp']['context7']['enabled'] = True
 path.write_text(json.dumps(data, indent=2, ensure_ascii=False) + '\n')
 "
-      fi
     fi
   fi
 

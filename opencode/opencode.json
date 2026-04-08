@@ -154,7 +154,7 @@
     },
     "neurox": {
       "command": [
-        "/home/clasing/.local/bin/neurox",
+        "neurox",
         "mcp"
       ],
       "enabled": true,

@@ -73,6 +73,8 @@ cd skills
 
 Eso es todo. El instalador detecta que herramientas tenes instaladas y las configura.
 
+> El instalador interactivo usa menus navegables (flechas/espacio/enter). Si no hay TTY/curses, cae a un menu numerado.
+
 En modo `--non-interactive`, **no** se muestra confirmacion final; si falta algun dato requerido, el comando falla con exit code `2`.
 
 > **Requisito**: `neurox` debe estar instalado y disponible en `PATH` para memoria persistente.
