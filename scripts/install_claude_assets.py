@@ -13,6 +13,7 @@ OPENCODE_SKILLS = ROOT / "opencode" / "skills"
 OPENCODE_COMMANDS = ROOT / "opencode" / "commands"
 OPENCODE_TEMPLATES = ROOT / "opencode" / "templates"
 CLAUDE_OVERLAY = ROOT / "claude-code" / "CLAUDE.md"
+OBSOLETE_COMMANDS = {"plan", "execute", "test", "review", "status"}
 
 
 def parse_frontmatter(text: str) -> tuple[dict[str, str], str]:
@@ -158,6 +159,13 @@ def command_intro(command_name: str, agent_name: str) -> str:
 
 
 def render_command_skills(target: Path) -> None:
+    # Remove command skills that were deleted from the repo so Claude stays in sync.
+    command_root = target / "skills"
+    for obsolete in OBSOLETE_COMMANDS:
+        obsolete_path = command_root / obsolete
+        if obsolete_path.exists():
+            shutil.rmtree(obsolete_path)
+
     for command_file in sorted(OPENCODE_COMMANDS.glob("*.md")):
         metadata, body = parse_frontmatter(command_file.read_text(encoding="utf-8"))
         name = command_file.stem

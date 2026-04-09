@@ -49,7 +49,7 @@ Tres conceptos:
 
 1. **Arquitectura delegate-first** — Tu agente principal se convierte en orquestador y delega todo a sub-agentes especializados. Cada uno recibe contexto fresco, hace trabajo acotado, y devuelve solo un resumen. [Ver agentes →](#agentes)
 
-2. **Plan-Driven Development** — Un flujo estructurado: `onboard → plan → estimate → execute → review → commit → pr`. Cada fase es un skill que cualquier agente puede correr. [Ver commands →](#commands)
+2. **Command-driven workflow** — Un flujo estructurado con comandos de discovery, validacion y entrega. Cada fase es un skill que cualquier agente puede correr. [Ver commands →](#commands)
 
 3. **Memoria persistente** — Neurox guarda decisiones, bugs, patrones y preferencias. El orquestador los consulta automaticamente al empezar cada sesion. [Ver memoria →](#memoria-persistente)
 
@@ -162,7 +162,7 @@ Para instalacion manual, verificacion post-instalacion, y troubleshooting, ver [
 | **Agentes** | planner + manager + coder | 1 solo (`vibe`) |
 | **PLAN.md** | Obligatorio | Opcional |
 | **Review humano** | Despues de cada paso | No existe |
-| **Commands** | 17 | 4 (`/do`, `/fix`, `/commit`, `/done`) |
+| **Commands** | 12 | 4 (`/do`, `/fix`, `/commit`, `/done`) |
 | **Velocidad** | Controlada | Maxima |
 | **Cuando usarlo** | Features grandes, decisiones de arquitectura, equipos | Exploraciones rapidas, bugfixes, features chicos |
 
@@ -171,13 +171,6 @@ Para instalacion manual, verificacion post-instalacion, y troubleshooting, ver [
 ## Flujo recomendado
 
 ```text
-/onboard                        # explorar el proyecto
-/plan <feature>                 # generar PLAN.md
-/estimate                       # estimar esfuerzo por paso
-/execute                        # implementar el siguiente paso
-/diff                           # ver los cambios con anotaciones
-/test                           # generar/correr tests del paso
-/review                         # quality gate antes de commit
 /verify-skill                   # validar skills y convenciones en paralelo
 /verify-security                # validar seguridad en paralelo
 /apply-feedback <correcciones>  # aplicar feedback si hay issues
@@ -206,7 +199,7 @@ skills/
 │   └── CLAUDE.md              # overlay para el orquestador en Claude Code
 ├── opencode/
 │   ├── opencode.json          # configuracion base de agentes y MCPs
-│   ├── commands/              # 15 slash commands
+│   ├── commands/              # 12 slash commands
 │   ├── skills/                # prd, nestjs-patterns, ts advanced types
 │   ├── templates/             # convenciones, commits, 5 tipos de plan
 │   ├── evals/                 # 9 golden tests de regresion
@@ -226,14 +219,14 @@ skills/
 ### Claude Code
 
 - **3 agentes** en `~/.claude/agents`: `planner`, `manager`, `coder`
-- **15 slash skills** en `~/.claude/skills` con los mismos nombres operativos
+- **12 slash skills** en `~/.claude/skills` con los mismos nombres operativos
 - **Overlay de `CLAUDE.md`** para mantener el mismo workflow
 - **Neurox MCP** configurado en `~/.claude.json`
 
 ### OpenCode
 
 - **3 agentes** con roles claros en `opencode.json`
-- **15 commands** para todo el ciclo
+- **12 commands** para todo el ciclo
 - **Neurox + Context7 MCP** como sistemas externos
 - **Templates** para convenciones, commits/PRs, y 5 tipos de plan
 - **Skills** de PRD, TypeScript avanzado, y patrones NestJS DDD+CQRS
