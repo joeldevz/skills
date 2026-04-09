@@ -5,11 +5,12 @@ Installs the neurox binary by building from source and installing to ~/.local/bi
 
 from __future__ import annotations
 
+import os
 import shutil
 import subprocess
-from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
+import sys
 
 from ..installer import InstallResult, TargetResult
 from ..models import InstallRequest, PackageDefinition
@@ -46,16 +47,18 @@ class NeuroxInstaller:
 
         # Determine install destination
         install_dir = Path.home() / ".local" / "bin"
-        install_path = install_dir / "neurox"
+        install_path = install_dir / self._binary_filename()
 
         # Create install directory if needed
         install_dir.mkdir(parents=True, exist_ok=True)
 
         # Build the binary
-        self._build_neurox(checkout_dir)
+        binary_name = self._binary_filename()
+
+        self._build_neurox(checkout_dir, binary_name)
 
         # Install the binary
-        built_binary = checkout_dir / "neurox"
+        built_binary = checkout_dir / binary_name
         shutil.copy2(built_binary, install_path)
 
         # Verify installation
@@ -88,7 +91,7 @@ class NeuroxInstaller:
             targets=targets_result,
         )
 
-    def _build_neurox(self, checkout_dir: Path) -> None:
+    def _build_neurox(self, checkout_dir: Path, binary_name: str) -> None:
         """Build neurox binary with SQLite FTS5 support.
 
         Args:
@@ -102,12 +105,12 @@ class NeuroxInstaller:
         env = {"CGO_ENABLED": "1"}
 
         subprocess.run(
-            ["go", "build", "-tags", "fts5", "-o", "neurox", "."],
+            ["go", "build", "-tags", "fts5", "-o", binary_name, "."],
             cwd=checkout_dir,
             check=True,
             capture_output=True,
             text=True,
-            env=env,
+            env={**os.environ, **env},
         )
 
     def _verify_neurox(self, install_path: Path) -> None:
@@ -125,6 +128,12 @@ class NeuroxInstaller:
             capture_output=True,
             text=True,
         )
+
+    def _binary_filename(self) -> str:
+        """Return the platform-appropriate neurox binary name."""
+        if os.name == "nt" or sys.platform.startswith("win"):
+            return "neurox.exe"
+        return "neurox"
 
     def _get_commit(self, checkout_dir: Path) -> str:
         """Get the current commit SHA from the checked-out repo.

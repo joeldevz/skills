@@ -1,24 +1,28 @@
 """Skills repo adapter for clasing-skill.
 
-Installs the skills package by calling the checked-out repo's scripts/setup.sh.
+Installs the skills package via setup.sh on Unix and a native Python path on Windows.
 """
 
 from __future__ import annotations
 
+import json
+import os
+import shutil
 import subprocess
-from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
+import sys
 
 from ..installer import InstallResult, TargetResult
 from ..models import InstallRequest, PackageDefinition
+from ..opencode_config import merge_opencode_mcp_config
 
 
 class SkillsRepoInstaller:
     """Installer for the skills repository.
 
-    Delegates to the checked-out repo's scripts/setup.sh for actual installation,
-    avoiding duplication of target-specific logic.
+    Delegates to the checked-out repo's scripts/setup.sh on Unix and a native
+    Python flow on Windows, avoiding duplication of target-specific logic.
     """
 
     def install(
@@ -48,6 +52,7 @@ class SkillsRepoInstaller:
             subprocess.CalledProcessError: If setup.sh fails
         """
         setup_script = checkout_dir / "scripts" / "setup.sh"
+        windows_native = self._is_windows()
 
         # Security: Verify the script is from a trusted source
         # In MVP, we only warn - more strict verification would require
@@ -57,7 +62,7 @@ class SkillsRepoInstaller:
         print(f"   This script will have full system access.")
         print(f"   Only proceed if you trust this source.\n")
 
-        if not setup_script.exists():
+        if not windows_native and not setup_script.exists():
             raise FileNotFoundError(f"Setup script not found at {setup_script}")
 
         # Get commit from the checked-out repo
@@ -69,7 +74,10 @@ class SkillsRepoInstaller:
         # Install for each target sequentially
         for target in request.targets:
             if target == "claude":
-                self._install_claude(setup_script)
+                if windows_native:
+                    self._install_claude_windows(checkout_dir)
+                else:
+                    self._install_claude(setup_script)
                 targets_result["claude"] = TargetResult(
                     status="installed",
                     installed_at=timestamp,
@@ -81,7 +89,10 @@ class SkillsRepoInstaller:
                     ],
                 )
             elif target == "opencode":
-                self._install_opencode(setup_script)
+                if windows_native:
+                    self._install_opencode_windows(checkout_dir)
+                else:
+                    self._install_opencode(setup_script)
                 targets_result["opencode"] = TargetResult(
                     status="installed",
                     installed_at=timestamp,
@@ -122,6 +133,19 @@ class SkillsRepoInstaller:
             text=True,
         )
 
+    def _install_claude_windows(self, checkout_dir: Path) -> None:
+        """Run the Claude asset installer natively on Windows."""
+        script = checkout_dir / "scripts" / "install_claude_assets.py"
+        if not script.exists():
+            raise FileNotFoundError(f"Claude asset installer not found at {script}")
+        subprocess.run(
+            [sys.executable, str(script)],
+            cwd=checkout_dir,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+
     def _install_opencode(self, setup_script: Path) -> None:
         """Run setup.sh --opencode.
 
@@ -137,6 +161,79 @@ class SkillsRepoInstaller:
             capture_output=True,
             text=True,
         )
+
+    def _install_opencode_windows(self, checkout_dir: Path) -> None:
+        """Install OpenCode natively on Windows."""
+        source_dir = checkout_dir / "opencode"
+        if not source_dir.exists():
+            raise FileNotFoundError(
+                f"OpenCode source directory not found at {source_dir}"
+            )
+
+        target_dir = Path.home() / ".config" / "opencode"
+        backup_dir = self._backup_opencode_dir(target_dir)
+
+        if target_dir.exists():
+            shutil.rmtree(target_dir)
+
+        shutil.copytree(source_dir, target_dir)
+
+        if backup_dir is not None:
+            self._merge_opencode_backup(target_dir, backup_dir)
+
+    def _backup_opencode_dir(self, target_dir: Path) -> Path | None:
+        """Create a timestamped backup of the current OpenCode config if needed."""
+        if not target_dir.exists():
+            return self._latest_opencode_backup(target_dir)
+
+        backup_dir = (
+            target_dir.parent
+            / f"{target_dir.name}.backup.{self._get_backup_timestamp()}"
+        )
+        shutil.copytree(target_dir, backup_dir)
+        return backup_dir
+
+    def _latest_opencode_backup(self, target_dir: Path) -> Path | None:
+        """Return the newest existing OpenCode backup directory, if any."""
+        backups = sorted(
+            target_dir.parent.glob(f"{target_dir.name}.backup.*"),
+            key=lambda path: path.stat().st_mtime,
+            reverse=True,
+        )
+        return backups[0] if backups else None
+
+    def _merge_opencode_backup(self, target_dir: Path, backup_dir: Path) -> None:
+        """Merge preserved MCP entries and restore Context7 credentials."""
+        target_config = target_dir / "opencode.json"
+        backup_config = backup_dir / "opencode.json"
+
+        if not target_config.exists() or not backup_config.exists():
+            return
+
+        installed = json.loads(target_config.read_text(encoding="utf-8"))
+        backup = json.loads(backup_config.read_text(encoding="utf-8"))
+        merged = merge_opencode_mcp_config(installed, backup)
+
+        context7_key = (
+            backup.get("mcp", {})
+            .get("context7", {})
+            .get("headers", {})
+            .get("CONTEXT7_API_KEY", "")
+        )
+        if context7_key and context7_key != "SET_IN_LOCAL_CONFIG":
+            merged.setdefault("mcp", {}).setdefault("context7", {}).setdefault(
+                "headers", {}
+            )["CONTEXT7_API_KEY"] = context7_key
+            merged["mcp"]["context7"]["enabled"] = True
+
+        target_config.write_text(
+            json.dumps(merged, indent=2, ensure_ascii=False) + "\n",
+            encoding="utf-8",
+        )
+
+    def _is_windows(self) -> bool:
+        """Return True when running on Windows."""
+        return os.name == "nt" or sys.platform.startswith("win")
 
     def _get_commit(self, checkout_dir: Path) -> str:
         """Get the current commit SHA from the checked-out repo.
@@ -159,3 +256,7 @@ class SkillsRepoInstaller:
     def _get_iso_timestamp(self) -> str:
         """Get current timestamp in ISO format."""
         return datetime.now(timezone.utc).isoformat()
+
+    def _get_backup_timestamp(self) -> str:
+        """Get a filesystem-safe timestamp for backups."""
+        return datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")

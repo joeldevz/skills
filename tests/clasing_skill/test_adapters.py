@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+import tempfile
 import sys
 import unittest
 from pathlib import Path
@@ -172,6 +174,133 @@ class TestSkillsRepoInstaller(unittest.TestCase):
         self.assertEqual(len(setup_calls), 1)
         self.assertIn("--claude", str(setup_calls[0]))
 
+    def test_windows_install_uses_native_python_and_preserves_opencode_mcp(
+        self,
+    ) -> None:
+        """Windows install should use native Python and preserve OpenCode MCP."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_root = Path(temp_dir)
+            checkout_dir = temp_root / "checkout"
+            checkout_dir.mkdir()
+            (checkout_dir / "scripts").mkdir()
+            (checkout_dir / "scripts" / "install_claude_assets.py").write_text(
+                "print('ok')\n",
+                encoding="utf-8",
+            )
+            opencode_source = checkout_dir / "opencode"
+            opencode_source.mkdir()
+            (opencode_source / "opencode.json").write_text(
+                json.dumps(
+                    {
+                        "mcp": {
+                            "context7": {
+                                "enabled": True,
+                                "type": "remote",
+                                "url": "https://mcp.context7.com/mcp",
+                            },
+                            "neurox": {
+                                "command": ["neurox", "mcp"],
+                                "enabled": True,
+                                "type": "local",
+                            },
+                        }
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            home_dir = temp_root / "home"
+            target_dir = home_dir / ".config" / "opencode"
+            target_dir.mkdir(parents=True)
+            (target_dir / "opencode.json").write_text(
+                json.dumps(
+                    {
+                        "mcp": {
+                            "custom": {
+                                "command": ["custom", "serve"],
+                                "enabled": True,
+                                "type": "local",
+                            },
+                            "context7": {
+                                "enabled": True,
+                                "type": "remote",
+                                "headers": {"CONTEXT7_API_KEY": "secret-key"},
+                                "url": "https://mcp.context7.com/mcp",
+                            },
+                        }
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            request = InstallRequest(
+                packages=["skills"],
+                targets=["claude", "opencode"],
+                versions={"skills": "latest"},
+                interactive=False,
+            )
+
+            with patch.object(self.installer, "_is_windows", return_value=True):
+                with patch.object(Path, "home", return_value=home_dir):
+                    with patch.object(
+                        self.installer, "_get_commit", return_value="abc123def456"
+                    ):
+                        with patch.object(
+                            self.installer,
+                            "_get_iso_timestamp",
+                            return_value="2026-04-08T12:00:00+00:00",
+                        ):
+                            with patch.object(
+                                self.installer,
+                                "_get_backup_timestamp",
+                                return_value="20260408-120000",
+                            ):
+                                with patch(
+                                    "scripts.clasing_skill.adapters.skills_repo.subprocess.run"
+                                ) as mock_run:
+                                    mock_run.return_value = MagicMock(
+                                        stdout="abc123\n", stderr="", returncode=0
+                                    )
+                                    result = self.installer.install(
+                                        checkout_dir, request, self.package
+                                    )
+
+            self.assertEqual(
+                result.targets["claude"].artifacts,
+                [
+                    "~/.claude",
+                    "~/.claude/agents",
+                    "~/.claude/skills",
+                    "~/.claude/CLAUDE.md",
+                ],
+            )
+            self.assertEqual(
+                result.targets["opencode"].artifacts, ["~/.config/opencode"]
+            )
+
+            claude_call = mock_run.call_args_list[0][0][0]
+            self.assertEqual(claude_call[0], sys.executable)
+            self.assertIn("install_claude_assets.py", claude_call[1])
+
+            merged_config = json.loads(
+                (home_dir / ".config" / "opencode" / "opencode.json").read_text(
+                    encoding="utf-8"
+                )
+            )
+            self.assertIn("custom", merged_config["mcp"])
+            self.assertEqual(
+                merged_config["mcp"]["neurox"],
+                {
+                    "command": ["neurox", "mcp"],
+                    "enabled": True,
+                    "type": "local",
+                },
+            )
+            self.assertEqual(
+                merged_config["mcp"]["context7"]["headers"]["CONTEXT7_API_KEY"],
+                "secret-key",
+            )
+
     @patch("scripts.clasing_skill.adapters.skills_repo.subprocess.run")
     @patch.object(Path, "exists")
     def test_subprocess_failure_raises(
@@ -255,13 +384,18 @@ class TestNeuroxInstaller(unittest.TestCase):
 
         checkout_dir = Path("/tmp/neurox-abc123")
 
-        self.installer._build_neurox(checkout_dir)
+        self.installer._build_neurox(checkout_dir, "neurox")
 
         build_calls = [c for c in mock_run.call_args_list if "build" in str(c)]
         self.assertEqual(len(build_calls), 1)
         args = build_calls[0][0][0]  # First positional arg (the command list)
         self.assertIn("-tags", args)
         self.assertIn("fts5", args)
+
+    def test_binary_filename_uses_windows_suffix(self) -> None:
+        """Windows builds should use an .exe binary name."""
+        with patch("scripts.clasing_skill.adapters.neurox.sys.platform", "win32"):
+            self.assertEqual(self.installer._binary_filename(), "neurox.exe")
 
     @patch("scripts.clasing_skill.adapters.neurox.subprocess.run")
     def test_verify_runs_status(self, mock_run: MagicMock) -> None:
@@ -285,7 +419,7 @@ class TestNeuroxInstaller(unittest.TestCase):
         checkout_dir = Path("/tmp/neurox-abc123")
 
         with self.assertRaises(CalledProcessError):
-            self.installer._build_neurox(checkout_dir)
+            self.installer._build_neurox(checkout_dir, "neurox")
 
 
 class TestInstallPackages(unittest.TestCase):
