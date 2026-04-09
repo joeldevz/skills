@@ -56,12 +56,13 @@ def _atomic_write(path: Path, data: dict[str, Any]) -> None:
         # Atomic rename
         temp_path.replace(path)
 
-        # Sync directory to ensure rename is durable
-        dir_fd = os.open(path.parent, os.O_RDONLY | os.O_DIRECTORY)
-        try:
-            os.fsync(dir_fd)
-        finally:
-            os.close(dir_fd)
+        # Sync directory to ensure rename is durable when the platform supports it
+        if hasattr(os, "O_DIRECTORY"):
+            dir_fd = os.open(path.parent, os.O_RDONLY | os.O_DIRECTORY)
+            try:
+                os.fsync(dir_fd)
+            finally:
+                os.close(dir_fd)
     except Exception:
         # Clean up temp file on error to avoid leaving stale files
         try:
