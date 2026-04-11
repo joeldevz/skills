@@ -1,4 +1,21 @@
 #!/usr/bin/env bash
 set -euo pipefail
 REPO_ROOT="$(cd "$(dirname "$0")" && pwd)"
-exec python3 -m scripts.clasing_skill "$@"
+
+# Try Go binary first (preferred), fall back to Python
+GO_BINARY="$REPO_ROOT/.build/clasing-skill"
+
+if [ ! -f "$GO_BINARY" ] && command -v go >/dev/null 2>&1; then
+  echo "Building clasing-skill..."
+  mkdir -p "$REPO_ROOT/.build"
+  (cd "$REPO_ROOT" && go build -o "$GO_BINARY" ./cmd/clasing-skill/) || {
+    echo "Go build failed, falling back to Python installer"
+    exec python3 -m scripts.clasing_skill "$@"
+  }
+fi
+
+if [ -f "$GO_BINARY" ]; then
+  exec "$GO_BINARY" "$@"
+else
+  exec python3 -m scripts.clasing_skill "$@"
+fi

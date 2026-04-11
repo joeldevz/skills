@@ -114,7 +114,10 @@ func SaveLock(path string, results []*models.InstallResult, req *models.InstallR
 
 func atomicWrite(path string, data map[string]interface{}) {
 	dir := filepath.Dir(path)
-	os.MkdirAll(dir, 0o755)
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		fmt.Fprintf(os.Stderr, "Error creating state dir %s: %v\n", dir, err)
+		return
+	}
 
 	b, err := json.MarshalIndent(data, "", "  ")
 	if err != nil {
@@ -127,5 +130,8 @@ func atomicWrite(path string, data map[string]interface{}) {
 		fmt.Fprintf(os.Stderr, "Error writing %s: %v\n", tmp, err)
 		return
 	}
-	os.Rename(tmp, path)
+	if err := os.Rename(tmp, path); err != nil {
+		fmt.Fprintf(os.Stderr, "Error renaming %s -> %s: %v\n", tmp, path, err)
+		os.Remove(tmp)
+	}
 }
