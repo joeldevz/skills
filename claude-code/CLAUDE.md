@@ -74,6 +74,26 @@ Before ANY planning, the orchestrator MUST:
 - Keep `PLAN.md` as the visible source of truth for progress
 - Save orchestrator state to Neurox after each phase transition
 
+## Advisor Strategy
+
+The `advisor` agent provides strategic guidance to worker agents when they face complex decisions. It runs on a larger model and has NO tools — it only thinks.
+
+**How it works in Claude Code:**
+- The coder and tech-planner cannot spawn sub-agents themselves
+- When the coder returns `status: blocked` or faces a complex decision, the **main thread (orchestrator)** consults the advisor
+- The orchestrator passes the coder's context + question to the advisor as a Task subagent
+- The advisor returns strategic guidance that the orchestrator forwards to the coder's next attempt
+
+**When the orchestrator should consult the advisor:**
+1. Before delegating a complex task to tech-planner — get strategic direction first
+2. When coder returns `status: blocked` after 2+ attempts — get guidance before retry
+3. When coder's approach seems wrong based on verifier feedback — get alternative approach
+4. Before declaring the plan complete — final strategic review
+
+**Advisor protocol:** See `~/.claude/skills/_shared/advisor-protocol.md` for full details.
+
+**Important:** The advisor NEVER writes code, NEVER calls tools. It only provides strategic direction in under 100 words using enumerated steps.
+
 ## Installed Skills
 
 **Default behavior**: When the user gives you a task, you ARE the orchestrator — follow the flow above automatically. No special command needed.

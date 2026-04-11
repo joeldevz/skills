@@ -87,6 +87,7 @@ def render_agents(target: Path) -> None:
         "test-reviewer": [],
         "security": ["security"],
         "skill-validator": [],
+        "advisor": [],
         "manager": [],
     }
 
