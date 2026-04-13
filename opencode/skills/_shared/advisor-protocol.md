@@ -6,20 +6,22 @@
 
 ## Cuando llamar al advisor
 
-Llama al tool `advisor_consult` en estos 4 momentos:
+Llama al tool `advisor_consult` solo cuando haya incertidumbre estrategica real:
 
 | Trigger | Descripcion | Ejemplo |
 |---------|-------------|---------|
-| **Antes de trabajo sustantivo** | Despues de orientacion (leer archivos, entender contexto), ANTES de escribir codigo o comprometerte con un approach | "He leido el codebase, voy a implementar X. Advisor: es el approach correcto?" |
+| **Solo en tareas complejas** | Despues de orientacion y solo si sigue habiendo incertidumbre estrategica real antes de escribir codigo | "Lei el codebase y veo dos approaches validos. Advisor: cual conviene y por que?" |
 | **Cuando creas que terminaste** | Hacer el deliverable durable primero (escribir archivo, guardar resultado), LUEGO consultar | "Termine la implementacion, esta en file.ts. Advisor: algo que se me escape?" |
 | **Cuando estes atascado** | Si llevas 2+ intentos sin progreso claro | "Intente A y B, ambos fallan por X. Advisor: que estoy missing?" |
 | **Antes de cambiar de approach** | Antes de pivotar a una estrategia fundamentalmente diferente | "El approach actual no funciona, estoy considerando pivotar a Y. Advisor: vale la pena?" |
 
 ## Frecuencia
 
-- **Tasks complejas**: minimo una vez antes de commit a un approach y una vez antes de declarar done.
-- **Tasks cortas/reactivas**: una llamada puede ser suficiente, o ninguna si es trivialmente simple.
-- **NO llamar para**: formatting, renames simples, fixes obvios, operaciones mecanicas.
+- **Tasks complejas**: usarlo con moderacion, no por reflejo.
+- **Tasks cortas/reactivas**: normalmente ninguna llamada.
+- **NO llamar para**: formatting, renames simples, fixes obvios, operaciones mecanicas, implementaciones con patron ya conocido.
+- **NO llamar** si el siguiente paso es obvio tras leer los archivos relevantes.
+- **Prioriza ejecutar y verificar antes de escalar**.
 
 ## Limite de uso
 
