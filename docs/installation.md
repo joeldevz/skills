@@ -79,18 +79,18 @@ cd skills
 2. Copia todo el contenido de `opencode/` a `~/.config/opencode/`
 3. Restaura tu API key de Context7 del backup si la tenias configurada
 4. Ejecuta `bun install` (o `npm install` como fallback) para dependencias de plugins
-5. Resultado: 3 agentes, 15 commands, skills, templates, evals, y MCPs configurados
+5. Resultado: 10 agentes, 7 commands, skills, templates, evals, y MCPs configurados
 
 #### Para Claude Code (`--claude`)
 
 1. Hace backup de `~/.claude/` si ya existe
-2. Renderiza los 3 agentes (`planner`, `manager`, `coder`) en `~/.claude/agents/`
-3. Convierte los 15 commands de OpenCode en skills de Claude Code en `~/.claude/skills/`
+2. Renderiza los 10 agentes (`orchestrator`, `advisor`, `coder`, `manager`, `tech-planner`, `product-planner`, `verifier`, `test-reviewer`, `security`, `skill-validator`) en `~/.claude/agents/`
+3. Convierte los 7 commands de OpenCode en skills de Claude Code en `~/.claude/skills/`
 4. Copia skills compartidas (`prd`, `nestjs-patterns`, `typescript-advanced-types`) a `~/.claude/skills/`
 5. Copia templates a `~/.claude/templates/`
 6. Agrega el bloque del workflow a `~/.claude/CLAUDE.md` (sin borrar contenido existente)
 7. Registra Neurox como MCP server en `~/.claude.json`
-8. Resultado: agentes, skills, templates, overlay de CLAUDE.md, y Neurox MCP listo
+8. Resultado: 10 agentes, 7 skills de comando, skills técnicas (nestjs-patterns, typescript-advanced-types, prd, security), overlay de CLAUDE.md, y Neurox MCP listo
 
 ## Instalacion manual
 
@@ -161,11 +161,11 @@ opencode
 ```bash
 # Verificar agentes
 ls ~/.claude/agents/
-# Deberia mostrar: planner.md  manager.md  coder.md
+# Deberia mostrar: orchestrator.md  advisor.md  coder.md  manager.md  tech-planner.md  product-planner.md  verifier.md  test-reviewer.md  security.md  skill-validator.md
 
 # Verificar skills
 ls ~/.claude/skills/
-# Deberia mostrar: plan/  execute/  review/  commit/  pr/  ... (15 skills + prd + nestjs-patterns + typescript-advanced-types)
+# Deberia mostrar: commit/  pr/  docs/  onboard/  rollback/  verify-security/  verify-skill/  nestjs-patterns/  typescript-advanced-types/  prd/  security/
 
 # Verificar templates
 ls ~/.claude/templates/

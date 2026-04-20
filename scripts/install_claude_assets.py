@@ -13,7 +13,7 @@ OPENCODE_SKILLS = ROOT / "opencode" / "skills"
 OPENCODE_COMMANDS = ROOT / "opencode" / "commands"
 OPENCODE_TEMPLATES = ROOT / "opencode" / "templates"
 CLAUDE_OVERLAY = ROOT / "claude-code" / "CLAUDE.md"
-OBSOLETE_COMMANDS = {"plan", "execute", "test", "review", "status"}
+OBSOLETE_COMMANDS = {"plan", "execute", "test", "review", "status", "apply-feedback", "context", "diff", "estimate", "plan-rewrite"}
 
 
 def parse_frontmatter(text: str) -> tuple[dict[str, str], str]:
@@ -80,6 +80,7 @@ def render_agents(target: Path) -> None:
 
     skill_map: dict[str, list[str]] = {
         "orchestrator": ["security"],
+        "advisor": [],
         "product-planner": ["prd"],
         "tech-planner": ["prd", "nestjs-patterns", "typescript-advanced-types"],
         "coder": ["nestjs-patterns", "typescript-advanced-types"],

@@ -2,18 +2,20 @@
 
 This repository installs a multi-agent system for Claude Code with auto-validation.
 
-## Agent Team
+## Agent Team & Model Routing
 
-| Agent | Role | Invoke as |
-|-------|------|-----------|
-| `product-planner` | SPEC.md — what and why (business context) | Task subagent |
-| `tech-planner` | PLAN.md — how (technical, prescriptive steps with How section) | Task subagent |
-| `coder` | Implements one step at a time (fast model) | Task subagent |
-| `verifier` | Lint + build + tests after each coder step | Task subagent |
-| `test-reviewer` | Reviews test coherence at end of plan | Task subagent |
-| `security` | Adversarial security judge (launched x2 in parallel) | Task subagent |
-| `skill-validator` | Validates code against project skill registry | Task subagent |
-| `manager` | Legacy — scoping/review companion (deprecated, use orchestrator flow) | Task subagent |
+| Agent | Role | Model | Invoke as |
+|-------|------|-------|-----------|
+| `orchestrator` | Coordinates the full pipeline | Sonnet (mid-tier) | Main thread |
+| `advisor` | Strategic guidance — complex decisions only | **Opus (top-tier)** | Task subagent |
+| `product-planner` | SPEC.md — what and why (business context) | Haiku (fast) | Task subagent |
+| `tech-planner` | PLAN.md — how (prescriptive steps with How section) | Sonnet (mid-tier) | Task subagent |
+| `coder` | Implements one step at a time | Haiku (fast) | Task subagent |
+| `verifier` | Lint + build + tests after each coder step | Haiku (fast) | Task subagent |
+| `test-reviewer` | Reviews test coherence at end of plan | Haiku (fast) | Task subagent |
+| `security` | Adversarial security judge (launched x2 in parallel) | Haiku (fast) | Task subagent |
+| `skill-validator` | Validates code against project skill registry | Haiku (fast) | Task subagent |
+| `manager` | Executes PLAN.md step by step via coder | Haiku (fast) | Task subagent |
 
 ## You ARE the Orchestrator
 
@@ -38,7 +40,8 @@ User gives task
 │
 ├── Phase 2: EXECUTION (per step)
 │   ├── Launch coder → then verifier
-│   └── If verifier fails: retry coder (max 2) with verifier_feedback
+│   ├── If verifier fails: retry coder (max 2) with verifier_feedback
+│   └── PARALLEL: if next 2-3 steps touch different modules → launch coders in parallel
 │
 ├── Phase 3: VALIDATION (after all steps)
 │   ├── Launch test-reviewer + security in PARALLEL
@@ -74,11 +77,29 @@ Before ANY planning, the orchestrator MUST:
 - Keep `PLAN.md` as the visible source of truth for progress
 - Save orchestrator state to Neurox after each phase transition
 
+## Advisor Strategy
+
+The `advisor` agent is a senior Opus model that provides strategic guidance when agents face complex decisions. It has NO tools — it only thinks and responds in under 100 words.
+
+**How it works in Claude Code:**
+- The coder and tech-planner cannot spawn sub-agents themselves
+- When the coder returns `status: blocked` or faces a complex decision, the **main thread (orchestrator)** consults the advisor
+- The orchestrator passes the coder context + question to the advisor as a Task subagent
+- The advisor returns strategic guidance that the orchestrator forwards to the coder next attempt
+
+**When the orchestrator should consult the advisor:**
+1. Phase 0: When discovery reveals ambiguous or contradictory requirements
+2. Phase 2: When a step fails 2x and you cannot determine if the approach is wrong or fixable
+3. Phase 3: When security judges disagree on a finding (before synthesizing)
+4. Task classification: When you are unsure if a task is small/medium/large
+
+**Maximum 3 advisor calls per session. Each call uses Opus — use surgically.**
+
 ## Installed Skills
 
 **Default behavior**: When the user gives you a task, you ARE the orchestrator — follow the flow above automatically. No special command needed.
 
-Utility slash skills (for manual control): `/onboard`, `/plan`, `/plan-rewrite`, `/estimate`, `/execute`, `/apply-feedback`, `/diff`, `/status`, `/rollback`, `/test`, `/review`, `/docs`, `/context`, `/commit`, `/pr`.
+Available slash commands: `/commit`, `/pr`, `/docs`, `/onboard`, `/rollback`, `/verify-security`, `/verify-skill`.
 
 Shared conventions in `~/.claude/skills/_shared/`:
 - `return-envelope.md` — standard return format for all sub-agents
@@ -87,5 +108,5 @@ Shared conventions in `~/.claude/skills/_shared/`:
 
 ## Installer
 
-Run `scripts/setup.sh --claude` to install/update all agents, skills, and templates.
+Run `./scripts/setup.sh --claude` to install/update all agents, skills, and templates.
 The installer also writes a Neurox MCP entry to `~/.claude.json`.
