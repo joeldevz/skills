@@ -205,7 +205,8 @@
     }
   },
   "plugin": [
-    "opencode-anthropic-login-via-cli"
+    "opencode-anthropic-login-via-cli",
+    "@ex-machina/opencode-anthropic-auth"
   ],
   "small_model": "anthropic/claude-haiku-4-5"
 }
