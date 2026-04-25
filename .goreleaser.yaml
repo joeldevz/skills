@@ -1,0 +1,87 @@
+version: 2
+
+project_name: clasing-skill
+
+before:
+  hooks:
+    - go mod tidy
+    - go run ./cmd/tools/sync-assets/
+
+builds:
+  - main: ./cmd/clasing-skill
+    binary: clasing-skill
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w -X main.version={{.Version}}
+
+archives:
+  - formats:
+      - tar.gz
+    format_overrides:
+      - goos: windows
+        formats:
+          - zip
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+
+checksum:
+  name_template: "checksums.txt"
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^ci:"
+      - "^chore:"
+
+release:
+  github:
+    owner: joeldevz
+    name: skills
+  draft: false
+  prerelease: auto
+  name_template: "v{{.Version}}"
+  header: |
+    ## clasing-skill v{{.Version}}
+
+    ### Install
+    **macOS / Linux:**
+    ```bash
+    curl -fsSL https://raw.githubusercontent.com/joeldevz/skills/main/scripts/install.sh | bash
+    ```
+    **Windows (PowerShell):**
+    ```powershell
+    irm https://raw.githubusercontent.com/joeldevz/skills/main/scripts/install.ps1 | iex
+    ```
+
+brews:
+  - repository:
+      owner: joeldevz
+      name: homebrew-tap
+      token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
+    directory: Formula
+    name: clasing-skill
+    homepage: "https://github.com/joeldevz/skills"
+    description: "AI agent skills installer for OpenCode and Claude Code"
+    license: "MIT"
+    commit_msg_template: "chore: update clasing-skill formula to {{ .Tag }}"
+
+scoops:
+  - repository:
+      owner: joeldevz
+      name: scoop-bucket
+      token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
+    name: clasing-skill
+    homepage: "https://github.com/joeldevz/skills"
+    description: "AI agent skills installer for OpenCode and Claude Code"
+    license: MIT
+    commit_msg_template: "chore: update clasing-skill to {{ .Tag }}"

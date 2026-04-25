@@ -55,27 +55,48 @@ Tres conceptos:
 
 ## Quick Start
 
+### macOS / Linux
+
 ```bash
-# Opcion 1: instalar todo lo compatible (interactivo)
-git clone git@github.com:joeldevz/skills.git
-cd skills
-./clasing-skill
-
-# Opcion 2: solo OpenCode (no interactivo)
-./clasing-skill --non-interactive --package skills --target opencode --version skills=latest --trust-setup-scripts
-
-# Opcion 3: solo Claude Code (no interactivo)
-./clasing-skill --non-interactive --package skills --target claude --version skills=latest --trust-setup-scripts
-
-# Opcion 4: instalar tambien neurox
-./clasing-skill --non-interactive --package skills --package neurox --target both --version skills=latest --version neurox=latest --trust-setup-scripts
+curl -fsSL https://raw.githubusercontent.com/joeldevz/skills/main/scripts/install.sh | bash
 ```
 
-Eso es todo. El instalador detecta que herramientas tenes instaladas y las configura.
+### Windows (PowerShell)
 
-> El instalador interactivo usa menus navegables (flechas/espacio/enter). Si no hay TTY/curses, cae a un menu numerado.
+```powershell
+irm https://raw.githubusercontent.com/joeldevz/skills/main/scripts/install.ps1 | iex
+```
 
-En modo `--non-interactive`, **no** se muestra confirmacion final; si falta algun dato requerido, el comando falla con exit code `2`.
+### Homebrew (macOS / Linux)
+
+```bash
+brew tap joeldevz/tap
+brew install clasing-skill
+```
+
+### Go install (cualquier plataforma con Go 1.23+)
+
+```bash
+go install github.com/joeldevz/skills/cmd/clasing-skill@latest
+```
+
+---
+
+Una vez instalado:
+
+```bash
+# Interactivo (recomendado la primera vez)
+clasing-skill
+
+# Solo Claude Code
+clasing-skill --package skills --target claude
+
+# Solo OpenCode
+clasing-skill --package skills --target opencode
+
+# Todo (skills + neurox)
+clasing-skill --package skills --package neurox --target both
+```
 
 > **Requisito**: `neurox` debe estar instalado y disponible en `PATH` para memoria persistente.
 

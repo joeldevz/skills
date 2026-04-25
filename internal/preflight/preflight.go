@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 
 	"github.com/joeldevz/skills/internal/models"
+	"github.com/joeldevz/skills/internal/paths"
 )
 
 // Run executes all preflight validations.
@@ -78,15 +79,14 @@ func Run(req *models.InstallRequest, cat *models.Catalog) []*models.ValidationIs
 					}
 				}
 			case pkgID == "skills" && target == "claude":
-				home, _ := os.UserHomeDir()
-				claudeDir := filepath.Join(home, ".claude")
+				claudeDir := paths.ClaudeDir()
 				if err := ensureWritable(claudeDir); err != nil {
 					issues = append(issues, &models.ValidationIssue{
 						Level:     "error",
 						PackageID: pkgID,
 						Target:    target,
 						Message:   fmt.Sprintf("cannot write to %s", claudeDir),
-						FixHint:   "Check permissions on ~/.claude",
+						FixHint:   "Check permissions on " + claudeDir,
 					})
 				}
 			case pkgID == "neurox":

@@ -7,13 +7,36 @@ import (
 	"github.com/joeldevz/skills/internal/adapters"
 	"github.com/joeldevz/skills/internal/catalog"
 	"github.com/joeldevz/skills/internal/config"
+	"github.com/joeldevz/skills/internal/doctor"
 	"github.com/joeldevz/skills/internal/models"
+	"github.com/joeldevz/skills/internal/paths"
 	"github.com/joeldevz/skills/internal/preflight"
 	"github.com/joeldevz/skills/internal/prompts"
 )
 
+// version is set by goreleaser via -ldflags "-X main.version=..."
+var (
+	version = "dev"
+	commit  = "none"
+	date    = "unknown"
+)
+
 func main() {
 	args := parseArgs()
+
+	if args.ShowVersion {
+		fmt.Printf("clasing-skill %s (%s) built %s\n", version, commit, date)
+		os.Exit(0)
+	}
+
+	if args.Doctor {
+		report := doctor.Run()
+		report.Print()
+		if report.HasErrors() {
+			os.Exit(1)
+		}
+		os.Exit(0)
+	}
 
 	if args.Help {
 		printUsage()
@@ -40,8 +63,7 @@ func main() {
 	// Load existing config
 	stateDir := args.StateDir
 	if stateDir == "" {
-		home, _ := os.UserHomeDir()
-		stateDir = home + "/.config/clasing-skill"
+		stateDir = paths.StateDir()
 	}
 	cfg := config.LoadOrDefault(stateDir + "/skills.config.json")
 
@@ -109,6 +131,8 @@ type cliArgs struct {
 	ListPackages   bool
 	ListVersions   string
 	AdvisorModel   string
+	ShowVersion    bool
+	Doctor         bool
 }
 
 func parseArgs() *cliArgs {
@@ -119,6 +143,10 @@ func parseArgs() *cliArgs {
 		switch osArgs[i] {
 		case "--help", "-h":
 			args.Help = true
+		case "version":
+			args.ShowVersion = true
+		case "doctor":
+			args.Doctor = true
 		case "--list-packages":
 			args.ListPackages = true
 		case "--list-versions":
@@ -141,12 +169,16 @@ func parseArgs() *cliArgs {
 				}
 			}
 		case "--version":
-			if i+1 < len(osArgs) {
+			// Check if this is the info flag or package version flag
+			if i+1 < len(osArgs) && !isFlag(osArgs[i+1]) {
 				i++
 				parts := splitOnce(osArgs[i], "=")
 				if len(parts) == 2 {
 					args.Versions[parts[0]] = parts[1]
 				}
+			} else {
+				// --version with no arg or followed by flag = show version
+				args.ShowVersion = true
 			}
 		case "--non-interactive":
 			args.NonInteractive = true
@@ -167,6 +199,10 @@ func parseArgs() *cliArgs {
 		}
 	}
 	return args
+}
+
+func isFlag(s string) bool {
+	return len(s) > 0 && s[0] == '-'
 }
 
 func splitOnce(s, sep string) []string {
@@ -236,6 +272,9 @@ func resolveNonInteractive(args *cliArgs, cat *models.Catalog, cfg map[string]in
 func printUsage() {
 	fmt.Println(`Usage: clasing-skill [options]
 
+Commands:
+  doctor                  Check environment and dependencies.
+
 Options:
   --package PACKAGE       Package to install (skills, neurox). Repeatable.
   --target TARGET         Target: claude, opencode, or both. Repeatable.
@@ -247,5 +286,6 @@ Options:
   --state-dir DIR         State directory (default: ~/.config/clasing-skill).
   --list-packages         List available packages.
   --list-versions PKG     List versions for a package.
+  --version               Show version and exit.
   -h, --help              Show this help.`)
 }
