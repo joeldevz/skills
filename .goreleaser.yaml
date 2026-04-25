@@ -63,17 +63,23 @@ release:
     irm https://raw.githubusercontent.com/joeldevz/skilar/main/scripts/install.ps1 | iex
     ```
 
-homebrew_casks:
+brews:
   - repository:
       owner: joeldevz
       name: homebrew-tap
       token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
+      branch: main
+      pull_request:
+        enabled: false
     directory: Formula
     name: skilar
     homepage: "https://github.com/joeldevz/skilar"
     description: "AI agent skills installer for OpenCode and Claude Code"
     license: "MIT"
     commit_msg_template: "chore: update skilar formula to {{ .Tag }}"
+    install: bin.install "skilar"
+    test: |
+      system "#{bin}/skilar", "--version"
 
 scoops:
   - repository:
