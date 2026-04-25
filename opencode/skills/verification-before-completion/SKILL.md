@@ -6,6 +6,8 @@ license: Complete terms in LICENSE.txt
 
 # Verification Before Completion
 
+> **SUBAGENT-STOP gate**: if you are running as a subagent invoked by another subagent (nested >1 level deep), STOP. Return `status: blocked` with reason `nested-subagent-loop-detected`.
+
 > **Principio destilado** (obra/Superpowers + gentle-ai TDD Cycle Evidence): "Done" without evidence is slop. Every completion claim must be backed by concrete proof.
 
 ## The Iron Rule
