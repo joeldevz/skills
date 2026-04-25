@@ -51,15 +51,24 @@ func Run(req *models.InstallRequest, cat *models.Catalog) []*models.ValidationIs
 			}
 		}
 
-		// Neurox requirement
+		// Neurox requirement — skip if neurox is also being installed in this session
 		if pkg.RequiresNeurox {
-			if _, err := exec.LookPath("neurox"); err != nil {
-				issues = append(issues, &models.ValidationIssue{
-					Level:     "error",
-					PackageID: pkgID,
-					Message:   "neurox not found in PATH (required by this package)",
-					FixHint:   "Install neurox first: skilar --package neurox",
-				})
+			neuroxAlsoInstalling := false
+			for _, p := range req.Packages {
+				if p == "neurox" {
+					neuroxAlsoInstalling = true
+					break
+				}
+			}
+			if !neuroxAlsoInstalling {
+				if _, err := exec.LookPath("neurox"); err != nil {
+					issues = append(issues, &models.ValidationIssue{
+						Level:     "error",
+						PackageID: pkgID,
+						Message:   "neurox not found in PATH (required by this package)",
+						FixHint:   "Add neurox to the install: skilar --package neurox --package skills",
+					})
+				}
 			}
 		}
 
@@ -90,15 +99,7 @@ func Run(req *models.InstallRequest, cat *models.Catalog) []*models.ValidationIs
 					})
 				}
 			case pkgID == "neurox":
-				if _, err := exec.LookPath("go"); err != nil {
-					issues = append(issues, &models.ValidationIssue{
-						Level:     "error",
-						PackageID: pkgID,
-						Target:    target,
-						Message:   "go not found in PATH (required to build neurox)",
-						FixHint:   "Install Go: https://go.dev/dl/",
-					})
-				}
+				// neurox is downloaded as a pre-built binary — no Go toolchain needed
 			}
 		}
 	}
