@@ -58,13 +58,13 @@ Tres conceptos:
 ### macOS / Linux
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/joeldevz/skills/main/scripts/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/joeldevz/skynex/main/scripts/install.sh | bash
 ```
 
 ### Windows (PowerShell)
 
 ```powershell
-irm https://raw.githubusercontent.com/joeldevz/skills/main/scripts/install.ps1 | iex
+irm https://raw.githubusercontent.com/joeldevz/skynex/main/scripts/install.ps1 | iex
 ```
 
 ### Homebrew (macOS / Linux)
@@ -77,7 +77,7 @@ brew install skynex
 ### Go install (cualquier plataforma con Go 1.23+)
 
 ```bash
-go install github.com/joeldevz/skills/cmd/skynex@latest
+go install github.com/joeldevz/skynex/cmd/skynex@latest
 ```
 
 ---

@@ -9,7 +9,7 @@
   Supports installation via Go or pre-built binary from GitHub Releases.
 
 .EXAMPLE
-  irm https://raw.githubusercontent.com/joeldevz/skills/main/scripts/install.ps1 | iex
+  irm https://raw.githubusercontent.com/joeldevz/skynex/main/scripts/install.ps1 | iex
 
   # Force a specific method:
   .\install.ps1 -Method binary
@@ -27,7 +27,7 @@ param(
 $ErrorActionPreference = "Stop"
 
 $GITHUB_OWNER = "joeldevz"
-$GITHUB_REPO  = "skills"
+$GITHUB_REPO  = "skynex"
 $BINARY_NAME  = "skynex"
 
 # ============================================================================

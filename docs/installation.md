@@ -43,8 +43,8 @@ Neurox funciona sin servicios externos (solo FTS5). Opcionalmente, con Ollama o 
 ## Instalacion automatica (recomendado)
 
 ```bash
-git clone git@github.com:joeldevz/skills.git
-cd skills
+git clone git@github.com:joeldevz/skynex.git
+cd skynex
 ```
 
 ### Instalar con el CLI unificado (recomendado)
@@ -104,8 +104,8 @@ skynex install --non-interactive --package skills --package neurox --target both
 
 ```bash
 # 1. Clonar el repo
-git clone git@github.com:joeldevz/skills.git
-cd skills
+git clone git@github.com:joeldevz/skynex.git
+cd skynex
 
 # 2. Copiar config de OpenCode
 cp -r opencode/ ~/.config/opencode/
@@ -121,8 +121,8 @@ cd ~/.config/opencode && bun install
 
 ```bash
 # 1. Clonar el repo
-git clone git@github.com:joeldevz/skills.git
-cd skills
+git clone git@github.com:joeldevz/skynex.git
+cd skynex
 
 # 2. Ejecutar solo el renderer de assets de Claude
 python3 scripts/install_claude_assets.py

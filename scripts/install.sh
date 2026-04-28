@@ -6,7 +6,7 @@ set -euo pipefail
 # One command to install AI agent skills for OpenCode and Claude Code.
 #
 # Usage:
-#   curl -fsSL https://raw.githubusercontent.com/joeldevz/skills/main/scripts/install.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/joeldevz/skynex/main/scripts/install.sh | bash
 #
 # Options:
 #   --method brew|binary|go   Force install method (default: auto)
@@ -15,7 +15,7 @@ set -euo pipefail
 # ============================================================================
 
 GITHUB_OWNER="joeldevz"
-GITHUB_REPO="skills"
+GITHUB_REPO="skynex"
 BINARY_NAME="skynex"
 BREW_TAP="joeldevz/tap"
 
@@ -58,7 +58,7 @@ show_help() {
 skynex installer
 
 USAGE:
-  curl -fsSL https://raw.githubusercontent.com/joeldevz/skills/main/scripts/install.sh | bash
+  curl -fsSL https://raw.githubusercontent.com/joeldevz/skynex/main/scripts/install.sh | bash
   ./install.sh [OPTIONS]
 
 OPTIONS:
