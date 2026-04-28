@@ -2,37 +2,34 @@ package prompts
 
 import (
 	"fmt"
+	"sort"
+	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
 )
 
+const maxVisible = 12
+
 // --- Provider Selector ---
 
 type providerSelector struct {
+	context   string // agent or group name
 	providers []string
 	cursor    int
+	offset    int // scroll offset
 	allModels map[string][]string
 	done      bool
 }
 
-func newProviderSelector(allModels map[string][]string) providerSelector {
+func newProviderSelector(context string, allModels map[string][]string) providerSelector {
 	providers := make([]string, 0, len(allModels))
 	for p := range allModels {
 		providers = append(providers, p)
 	}
-	// Sort providers for deterministic order
-	if len(providers) > 0 {
-		for i := 0; i < len(providers)-1; i++ {
-			for j := i + 1; j < len(providers); j++ {
-				if providers[i] > providers[j] {
-					providers[i], providers[j] = providers[j], providers[i]
-				}
-			}
-		}
-	}
+	sort.Strings(providers)
 	return providerSelector{
+		context:   context,
 		providers: providers,
-		cursor:    0,
 		allModels: allModels,
 	}
 }
@@ -46,15 +43,21 @@ func (m providerSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "up", "k":
 			if m.cursor > 0 {
 				m.cursor--
+				if m.cursor < m.offset {
+					m.offset = m.cursor
+				}
 			}
 		case "down", "j":
 			if m.cursor < len(m.providers)-1 {
 				m.cursor++
+				if m.cursor >= m.offset+maxVisible {
+					m.offset = m.cursor - maxVisible + 1
+				}
 			}
 		case "enter":
 			m.done = true
 			return m, tea.Quit
-		case "esc":
+		case "esc", "q":
 			return m, tea.Quit
 		}
 	}
@@ -62,41 +65,58 @@ func (m providerSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m providerSelector) View() string {
-	s := titleStyle.Render("Pick model for: (provider)") + "\n"
+	s := titleStyle.Render("Select provider") + "\n"
+	s += groupStyle.Render("for: "+m.context) + "\n"
 	s += dimStyle.Render("──────────────────────────────") + "\n\n"
-	s += dimStyle.Render("Provider:") + "\n"
 
-	for i, provider := range m.providers {
+	visible := m.providers
+	start := m.offset
+	end := m.offset + maxVisible
+	if end > len(visible) {
+		end = len(visible)
+	}
+
+	if start > 0 {
+		s += dimStyle.Render(fmt.Sprintf("  ↑ %d more\n", start))
+	}
+
+	for i := start; i < end; i++ {
+		p := m.providers[i]
+		count := len(m.allModels[p])
 		cursor := "  "
-		if i == m.cursor {
-			cursor = "> "
-		}
-		count := len(m.allModels[provider])
-		line := fmt.Sprintf("%s%s (%d model%s)", cursor, provider, count, map[bool]string{true: "s", false: ""}[count != 1])
 		style := dimStyle
 		if i == m.cursor {
-			style = selectedStyle
+			cursor = "▶ "
+			style = activeStyle
 		}
-		s += style.Render(line) + "\n"
+		s += style.Render(fmt.Sprintf("%s%-20s %s", cursor, p, dimStyle.Render(fmt.Sprintf("(%d models)", count)))) + "\n"
 	}
-	s += "\n" + dimStyle.Render("[enter] Select provider   [esc] Back") + "\n"
+
+	if end < len(visible) {
+		s += dimStyle.Render(fmt.Sprintf("  ↓ %d more\n", len(visible)-end))
+	}
+
+	s += "\n"
+	s += dimStyle.Render("↑↓ navigate   enter select   esc cancel") + "\n"
 	return s
 }
 
-// --- Model Selector (per provider) ---
+// --- Model Selector ---
 
 type modelSelector struct {
+	context  string // agent or group name
 	provider string
 	models   []string
 	cursor   int
+	offset   int
 	done     bool
 }
 
-func newModelSelector(provider string, models []string) modelSelector {
+func newModelSelector(context, provider string, models []string) modelSelector {
 	return modelSelector{
+		context:  context,
 		provider: provider,
 		models:   models,
-		cursor:   0,
 	}
 }
 
@@ -109,15 +129,21 @@ func (m modelSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "up", "k":
 			if m.cursor > 0 {
 				m.cursor--
+				if m.cursor < m.offset {
+					m.offset = m.cursor
+				}
 			}
 		case "down", "j":
 			if m.cursor < len(m.models)-1 {
 				m.cursor++
+				if m.cursor >= m.offset+maxVisible {
+					m.offset = m.cursor - maxVisible + 1
+				}
 			}
 		case "enter":
 			m.done = true
 			return m, tea.Quit
-		case "esc":
+		case "esc", "q":
 			return m, tea.Quit
 		}
 	}
@@ -125,57 +151,80 @@ func (m modelSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m modelSelector) View() string {
-	s := titleStyle.Render(fmt.Sprintf("Pick model for: %s / %s", "(agent)", m.provider)) + "\n"
-	s += dimStyle.Render("──────────────────────────────") + "\n\n"
-
-	for i, model := range m.models {
-		cursor := "  "
-		if i == m.cursor {
-			cursor = "> "
+	// Strip provider prefix from model name for cleaner display
+	shortName := func(id string) string {
+		parts := strings.SplitN(id, "/", 2)
+		if len(parts) == 2 {
+			return parts[1]
 		}
-		style := dimStyle
-		if i == m.cursor {
-			style = selectedStyle
-		}
-		s += style.Render(fmt.Sprintf("%s%s\n", cursor, model))
+		return id
 	}
 
-	s += "\n" + dimStyle.Render("[enter] Select   [esc] Back to providers") + "\n"
+	s := titleStyle.Render("Select model") + "\n"
+	s += groupStyle.Render("for: "+m.context) + "  " + dimStyle.Render("provider: "+m.provider) + "\n"
+	s += dimStyle.Render("──────────────────────────────") + "\n\n"
+
+	start := m.offset
+	end := m.offset + maxVisible
+	if end > len(m.models) {
+		end = len(m.models)
+	}
+
+	if start > 0 {
+		s += dimStyle.Render(fmt.Sprintf("  ↑ %d more\n", start))
+	}
+
+	for i := start; i < end; i++ {
+		model := m.models[i]
+		cursor := "  "
+		style := dimStyle
+		if i == m.cursor {
+			cursor = "▶ "
+			style = activeStyle
+		}
+		s += style.Render(fmt.Sprintf("%s%s", cursor, shortName(model))) + "\n"
+	}
+
+	if end < len(m.models) {
+		s += dimStyle.Render(fmt.Sprintf("  ↓ %d more\n", len(m.models)-end))
+	}
+
+	s += "\n"
+	s += dimStyle.Render("↑↓ navigate   enter select   esc back to providers") + "\n"
 	return s
 }
 
-// RunModelPicker displays the hierarchical model picker: providers → models.
-// Takes the context string (agent or group name) and all available models.
-// Returns the full model ID (provider/model) or empty string if cancelled.
+// RunModelPicker shows provider → model picker.
+// context is the agent or group name for display in title.
+// Returns the full model ID (provider/model) or "" if cancelled.
 func RunModelPicker(context string, allModels map[string][]string) (string, error) {
 	if len(allModels) == 0 {
 		return "", fmt.Errorf("no models available")
 	}
 
 	// 1. Provider selection
-	providerModel := newProviderSelector(allModels)
-	p := tea.NewProgram(providerModel)
-	finalModel, err := p.Run()
+	ps := newProviderSelector(context, allModels)
+	prog := tea.NewProgram(ps, tea.WithAltScreen())
+	final, err := prog.Run()
 	if err != nil {
-		return "", fmt.Errorf("provider selection: %w", err)
+		return "", err
 	}
-	providerResult := finalModel.(providerSelector)
-	if !providerResult.done || providerResult.cursor >= len(providerResult.providers) {
-		return "", nil // Cancelled
+	result := final.(providerSelector)
+	if !result.done {
+		return "", nil
 	}
-	selectedProvider := providerResult.providers[providerResult.cursor]
+	selectedProvider := result.providers[result.cursor]
 
 	// 2. Model selection
-	models := allModels[selectedProvider]
-	modelModel := newModelSelector(selectedProvider, models)
-	p = tea.NewProgram(modelModel)
-	finalModel, err = p.Run()
+	ms := newModelSelector(context, selectedProvider, allModels[selectedProvider])
+	prog = tea.NewProgram(ms, tea.WithAltScreen())
+	final, err = prog.Run()
 	if err != nil {
-		return "", fmt.Errorf("model selection: %w", err)
+		return "", err
 	}
-	modelResult := finalModel.(modelSelector)
-	if !modelResult.done || modelResult.cursor >= len(modelResult.models) {
-		return "", nil // Cancelled
+	mResult := final.(modelSelector)
+	if !mResult.done {
+		return "", nil // cancelled — go back
 	}
-	return modelResult.models[modelResult.cursor], nil
+	return mResult.models[mResult.cursor], nil
 }

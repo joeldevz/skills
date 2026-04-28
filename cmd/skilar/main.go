@@ -47,6 +47,12 @@ func main() {
 		os.Exit(0)
 	}
 
+	// profile help
+	if args.ProfileHelp {
+		printProfileUsage()
+		os.Exit(0)
+	}
+
 	// profiles — list
 	if args.ProfileList {
 		handleProfileList()
@@ -87,70 +93,78 @@ func main() {
 		os.Exit(0)
 	}
 
-	// Load catalog
-	cat, err := catalog.Load()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error loading catalog: %v\n", err)
-		os.Exit(1)
-	}
-
-	// Load existing config
-	stateDir := args.StateDir
-	if stateDir == "" {
-		stateDir = paths.StateDir()
-	}
-	cfg := config.LoadOrDefault(stateDir + "/skills.config.json")
-
-	// Resolve request
-	var request *models.InstallRequest
-	if args.NonInteractive {
-		request, err = resolveNonInteractive(args, cat, cfg)
-	} else {
-		request, err = prompts.ResolveInteractive(cat, cfg, args)
-	}
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-		os.Exit(2)
-	}
-	request.StateDir = stateDir
-
-	// Preflight
-	issues := preflight.Run(request, cat)
-	if preflight.HasErrors(issues) {
-		preflight.PrintIssues(issues)
-		fmt.Fprintln(os.Stderr, "\nInstallation aborted due to validation errors.")
-		os.Exit(2)
-	}
-
-	// Confirm
-	if !args.NonInteractive && !args.Yes {
-		if !prompts.ConfirmPlan(request, cat) {
-			fmt.Println("Installation cancelled.")
-			os.Exit(0)
+	// install
+	if args.Install {
+		// Load catalog
+		cat, err := catalog.Load()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error loading catalog: %v\n", err)
+			os.Exit(1)
 		}
-	}
 
-	// Install
-	fmt.Println("\nInstalling packages...")
-	results, err := adapters.InstallAll(request, cat)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "\nInstallation failed: %v\n", err)
-		os.Exit(1)
-	}
-
-	// Save state
-	config.SaveConfig(stateDir+"/skills.config.json", request, cfg)
-	config.SaveLock(stateDir+"/skills.lock.json", results, request)
-
-	// Print results
-	fmt.Println("\nInstallation complete!")
-	for _, r := range results {
-		fmt.Printf("\n  %s @ %s (%s)\n", r.PackageID, r.ResolvedVersion, r.Commit[:8])
-		for target, tr := range r.Targets {
-			fmt.Printf("    [%s] %s: %s\n", target, tr.Status, joinStrings(tr.Artifacts))
+		// Load existing config
+		stateDir := args.StateDir
+		if stateDir == "" {
+			stateDir = paths.StateDir()
 		}
+		cfg := config.LoadOrDefault(stateDir + "/skills.config.json")
+
+		// Resolve request
+		var request *models.InstallRequest
+		if args.NonInteractive {
+			request, err = resolveNonInteractive(args, cat, cfg)
+		} else {
+			request, err = prompts.ResolveInteractive(cat, cfg, args)
+		}
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+			os.Exit(2)
+		}
+		request.StateDir = stateDir
+
+		// Preflight
+		issues := preflight.Run(request, cat)
+		if preflight.HasErrors(issues) {
+			preflight.PrintIssues(issues)
+			fmt.Fprintln(os.Stderr, "\nInstallation aborted due to validation errors.")
+			os.Exit(2)
+		}
+
+		// Confirm
+		if !args.NonInteractive && !args.Yes {
+			if !prompts.ConfirmPlan(request, cat) {
+				fmt.Println("Installation cancelled.")
+				os.Exit(0)
+			}
+		}
+
+		// Install
+		fmt.Println("\nInstalling packages...")
+		results, err := adapters.InstallAll(request, cat)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "\nInstallation failed: %v\n", err)
+			os.Exit(1)
+		}
+
+		// Save state
+		config.SaveConfig(stateDir+"/skills.config.json", request, cfg)
+		config.SaveLock(stateDir+"/skills.lock.json", results, request)
+
+		// Print results
+		fmt.Println("\nInstallation complete!")
+		for _, r := range results {
+			fmt.Printf("\n  %s @ %s (%s)\n", r.PackageID, r.ResolvedVersion, r.Commit[:8])
+			for target, tr := range r.Targets {
+				fmt.Printf("    [%s] %s: %s\n", target, tr.Status, joinStrings(tr.Artifacts))
+			}
+		}
+		fmt.Printf("\nState files written to %s\n", stateDir)
+		os.Exit(0)
 	}
-	fmt.Printf("\nState files written to %s\n", stateDir)
+
+	// No recognized command — show help
+	printUsage()
+	os.Exit(0)
 }
 
 type cliArgs struct {
@@ -167,6 +181,8 @@ type cliArgs struct {
 	AdvisorModel   string
 	ShowVersion    bool
 	Doctor         bool
+	Install        bool
+	ProfileHelp    bool
 	ProfileList    bool
 	ProfileCreate  bool
 	ProfileEdit    string
@@ -189,28 +205,44 @@ func parseArgs() *cliArgs {
 			args.ShowVersion = true
 		case "doctor":
 			args.Doctor = true
+		case "install":
+			args.Install = true
 		case "profiles":
+			// alias for `profile list`
 			args.ProfileList = true
 		case "profile":
-			// skilar profile create [name]
-			// skilar profile edit <name>
-			// skilar profile delete <name>
-			if i+1 < len(osArgs) {
-				sub := osArgs[i+1]
+			if i+1 >= len(osArgs) {
+				// skilar profile (no subcommand)
+				args.ProfileHelp = true
+				break
+			}
+			sub := osArgs[i+1]
+			switch sub {
+			case "list":
+				args.ProfileList = true
 				i++
-				switch sub {
-				case "create":
-					args.ProfileCreate = true
-				case "edit":
-					if i+1 < len(osArgs) {
-						args.ProfileEdit = osArgs[i+1]
-						i++
+			case "create":
+				args.ProfileCreate = true
+				i++
+			default:
+				// sub is a profile name; expect an action verb next
+				profileName := sub
+				i++
+				if i+1 < len(osArgs) {
+					verb := osArgs[i+1]
+					i++
+					switch verb {
+					case "edit":
+						args.ProfileEdit = profileName
+					case "delete":
+						args.ProfileDelete = profileName
+					default:
+						// unknown verb — treat as profile help
+						args.ProfileHelp = true
 					}
-				case "delete":
-					if i+1 < len(osArgs) {
-						args.ProfileDelete = osArgs[i+1]
-						i++
-					}
+				} else {
+					// name with no verb — treat as profile help
+					args.ProfileHelp = true
 				}
 			}
 		case "up":
@@ -465,10 +497,11 @@ Commands:
   install                 Interactive installer (TUI)
   doctor                  Check environment and dependencies
   version                 Show version
-  profiles                List all profiles (builtin + custom)
-  profile create [name]   Create a new profile (TUI)
-  profile edit <name>     Edit an existing profile
-  profile delete <name>   Delete a custom profile
+  profile                 Manage profiles (list, create, edit, delete)
+  profile list            List all profiles (builtin + custom)
+  profile create          Create a new profile (TUI)
+  profile <name> edit     Edit an existing profile
+  profile <name> delete   Delete a custom profile
   up [profile]            Launch OpenCode with a profile
                           Builtin: cheap, balanced, premium
                           Custom: any profile you created
@@ -476,12 +509,15 @@ Commands:
   up [profile] --port N   Use specific port (with --web)
 
 Examples:
+  skilar install
   skilar up                        Launch with balanced profile
   skilar up cheap                  Haiku everywhere
   skilar up frontend               Your custom frontend profile
   skilar up frontend --web --port 3001
-  skilar profile create backend
-  skilar profiles
+  skilar profile list
+  skilar profile create
+  skilar profile backend edit
+  skilar profile backend delete
 
 Options:
   --package PACKAGE       Package to install (skills, neurox). Repeatable.
@@ -496,4 +532,20 @@ Options:
   --list-versions PKG     List versions for a package.
   --version               Show version and exit.
   -h, --help              Show this help.`)
+}
+
+func printProfileUsage() {
+	fmt.Println(`Usage: skilar profile <command>
+
+Commands:
+  list                    List all profiles (builtin + custom)
+  create                  Create a new profile (TUI)
+  <name> edit             Edit an existing profile
+  <name> delete           Delete a custom profile
+
+Examples:
+  skilar profile list
+  skilar profile create
+  skilar profile backend edit
+  skilar profile backend delete`)
 }
