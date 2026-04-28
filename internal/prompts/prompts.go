@@ -15,6 +15,8 @@ var (
 	titleStyle    = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("39"))
 	selectedStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("42"))
 	dimStyle      = lipgloss.NewStyle().Foreground(lipgloss.Color("240"))
+	activeStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("212")).Bold(true)
+	groupStyle    = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("39"))
 )
 
 // AdvisorModels is the curated list of models for the advisor picker.
